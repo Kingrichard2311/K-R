@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kidnap &amp; Ransom Exposure &amp; Underwriting Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0A1728; --bgPanel:#0F2038; --bgPanelAlt:#13253F;
+    --line:#233A57; --lineSoft:#1A2E4A;
+    --gold:#C9A24B; --goldBright:#E8C877; --goldDim:#8A7238;
+    --text:#EDE8DA; --textMuted:#8FA2BD; --textFaint:#5C7091;
+    --low:#4C9A6A; --moderate:#D6A537; --high:#D97A34; --critical:#C0473F;
+    --display: "Iowan Old Style","Palatino Linotype",Georgia,"Times New Roman",serif;
+    --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--body);
+    min-height:100vh; position:relative; overflow-x:hidden;
+  }
+  #bg-canvas{
+    position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none;
+  }
+  .app{ position:relative; z-index:1; }
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  select, input{font-family:inherit;}
+  ::selection{ background: rgba(201,162,75,0.35); }
+
+  .header{ position:relative; padding:20px 16px 12px; border-bottom:1px solid var(--line); background:rgba(10,23,40,0.55); backdrop-filter: blur(2px); }
+  .presenter-toggle-btn{ position:absolute; top:18px; right:16px; display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600;
+    padding:6px 11px; border-radius:999px; color:var(--textMuted); background:var(--bgPanelAlt); border:1px solid var(--line); }
+  .presenter-toggle-btn:hover{ color:var(--text); border-color:var(--goldDim); }
+  .presenter-toggle-btn.on{ color:var(--goldBright); background:rgba(201,162,75,0.14); border-color:var(--goldDim); }
+  .presenter-bar{ position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; align-items:center; justify-content:center;
+    gap:14px; flex-wrap:wrap; padding:10px 16px; background:rgba(10,23,40,0.96); border-top:1px solid var(--goldDim); backdrop-filter:blur(6px); }
+  .presenter-bar .step-label{ font-size:11px; color:var(--textMuted); font-family:var(--mono); min-width:120px; text-align:center; }
+  .presenter-nav-btn{ display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; padding:7px 14px; border-radius:6px;
+    color:var(--text); background:var(--bgPanelAlt); border:1px solid var(--line); }
+  .presenter-nav-btn:hover:not(:disabled){ border-color:var(--goldDim); color:var(--goldBright); }
+  .presenter-nav-btn:disabled{ opacity:.35; cursor:default; }
+  .presenter-notes{ position:fixed; right:16px; bottom:60px; z-index:39; width:min(320px, calc(100vw - 32px)); max-height:38vh; overflow-y:auto;
+    background:var(--bgPanel); border:1px solid var(--goldDim); border-radius:10px; padding:14px 16px; box-shadow:0 8px 30px rgba(0,0,0,0.5); }
+  body.presenter-on .content{ padding-bottom:76px; }
+  .header-inner, .content, .tabs-inner{ max-width:1152px; margin:0 auto; width:100%; }
+  .eyebrow-top{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .eyebrow-top span{ font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--gold); }
+  h1{ font-family:var(--display); font-size:22px; font-weight:600; margin:2px 0 0; color:var(--text); }
+  .subtitle{ font-size:12px; color:var(--textMuted); margin-top:6px; }
+
+  .tabs{ position:sticky; top:0; z-index:10; display:flex; gap:4px; padding:8px 12px; overflow-x:auto;
+    border-bottom:1px solid var(--line); background:rgba(10,23,40,0.92); backdrop-filter: blur(6px); }
+  .tabs-inner{ display:flex; gap:4px; }
+  .tab-btn{ white-space:nowrap; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:500;
+    background:transparent; color:var(--textMuted); border:1px solid transparent; transition:.15s; }
+  .tab-btn.active{ background:rgba(201,162,75,0.14); color:var(--goldBright); border-color:var(--goldDim); }
+  .tab-btn:hover:not(.active){ color:var(--text); }
+
+  .content{ padding:16px 12px; display:flex; flex-direction:column; gap:12px; }
+  @media(min-width:768px){ .content{ padding:20px; } }
+
+  .card{ border-radius:10px; padding:16px; background:var(--bgPanel); border:1px solid var(--line); }
+  .eyebrow{ font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:4px; }
+  .muted{ color:var(--textMuted); }
+  .faint{ color:var(--textFaint); }
+  .mono{ font-family:var(--mono); }
+
+  .grid{ display:grid; gap:8px; }
+  .grid-kpi{ grid-template-columns:repeat(2,1fr); }
+  @media(min-width:1024px){ .grid-kpi{ grid-template-columns:repeat(5,1fr); } }
+  .grid-2{ grid-template-columns:1fr; gap:12px; }
+  @media(min-width:768px){ .grid-2{ grid-template-columns:1fr 1fr; } }
+  .grid-3{ grid-template-columns:1fr; gap:8px; }
+  @media(min-width:640px){ .grid-3{ grid-template-columns:repeat(3,1fr); } }
+  .grid-6{ grid-template-columns:repeat(2,1fr); gap:8px; }
+  @media(min-width:640px){ .grid-6{ grid-template-columns:repeat(3,1fr); } }
+
+  .kpi-value{ font-family:var(--mono); font-size:22px; font-weight:600; }
+  .kpi-sub{ font-size:11px; color:var(--textMuted); margin-top:4px; }
+
+  .toggle{ width:100%; display:flex; align-items:center; justify-content:space-between; border-radius:6px;
+    padding:10px 12px; background:var(--bgPanelAlt); border:1px solid var(--line); transition:.15s; }
+  .toggle.on{ background:rgba(201,162,75,0.10); border-color:var(--goldDim); }
+  .toggle .label{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); }
+  .toggle .state{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; padding:2px 8px; border-radius:4px; color:var(--textFaint); }
+  .toggle.on .state{ color:var(--gold); background:rgba(201,162,75,0.15); }
+
+  .pill{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; font-family:var(--mono); }
+
+  select, .input{ width:100%; margin-top:4px; font-size:13px; border-radius:6px; padding:7px 8px;
+    background:var(--bgPanelAlt); border:1px solid var(--line); color:var(--text); }
+  label.small{ font-size:11px; color:var(--textMuted); }
+  input[type=range]{ width:100%; accent-color:var(--gold); }
+
+  .btn-ghost{ display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:4px 8px; border-radius:6px;
+    color:var(--textMuted); border:1px solid var(--line); background:transparent; }
+  .btn-ghost:hover{ color:var(--text); border-color:var(--gold); }
+
+  table{ width:100%; font-size:12px; border-collapse:collapse; }
+  th{ text-align:left; padding:6px 8px; color:var(--textFaint); font-weight:600; white-space:nowrap; }
+  th button{ background:none; border:none; color:var(--textFaint); font-weight:600; display:flex; align-items:center; gap:4px; font-size:12px; padding:0;}
+  td{ padding:6px 8px; }
+  tbody tr{ border-bottom:1px solid var(--lineSoft); cursor:pointer; transition:.1s; }
+  tbody tr:hover{ background:rgba(201,162,75,0.06); }
+  tbody tr.selected{ background:rgba(201,162,75,0.10); }
+  .table-wrap{ overflow-x:auto; }
+
+  .search-wrap{ position:relative; flex:1; min-width:160px; }
+  .search-wrap svg{ position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--textFaint); }
+  .search-wrap input{ width:100%; padding-left:28px; }
+  .filters{ display:flex; flex-wrap:wrap; gap:8px; }
+
+  .minirow{ display:flex; align-items:center; justify-content:space-between; gap:8px; border-radius:6px;
+    padding:8px 12px; background:var(--bgPanelAlt); border:1px solid var(--line); font-size:13px; }
+
+  .ministat{ border-radius:6px; padding:10px; background:var(--bgPanelAlt); border:1px solid var(--line); }
+  .ministat .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:.03em; color:var(--textFaint); }
+  .ministat .val{ font-size:14px; font-weight:600; font-family:var(--mono); margin-top:2px; }
+
+  .rec-list{ display:flex; flex-direction:column; gap:6px; margin:6px 0 0; padding:0; list-style:none; }
+  .rec-list li{ display:flex; gap:8px; font-size:13px; }
+  .rec-list svg{ margin-top:3px; flex-shrink:0; }
+
+  .heat-table td{ text-align:center; color:#0A1728; font-family:var(--mono); font-weight:600; border-radius:4px; padding:6px 4px; }
+  .heat-table th{ font-size:11px; padding-bottom:4px; }
+  .heat-table{ border-collapse:separate; border-spacing:3px; }
+
+  .threat-card .stat-label{ font-size:10px; text-transform:uppercase; letter-spacing:.03em; color:var(--textFaint);
+    display:flex; align-items:center; justify-content:center; gap:4px; }
+  .threat-card .stat-value{ font-size:14px; font-weight:600; font-family:var(--mono); margin-top:2px; }
+  .bar-track{ width:100%; height:6px; border-radius:999px; background:var(--lineSoft); overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:999px; background:var(--gold); }
+
+  .chart-box{ width:100%; }
+  canvas.chart-canvas{ max-width:100%; }
+
+  .traffic{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; }
+  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+
+  .geo-legend{ display:flex; gap:14px; flex-wrap:wrap; margin:6px 0 2px; }
+  .geo-legend-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--textMuted); }
+  .geo-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .geo-map-wrap{ position:relative; margin-top:8px; border-radius:8px; overflow:hidden;
+    background:radial-gradient(ellipse at 50% 30%, rgba(35,58,87,0.35), rgba(10,23,40,0) 70%); }
+  #geo-svg{ width:100%; height:auto; display:block; }
+  .geo-tooltip{ position:absolute; z-index:20; pointer-events:none; opacity:0; transition:opacity .12s;
+    background:var(--bgPanelAlt); border:1px solid var(--goldDim); border-radius:6px; padding:8px 10px;
+    font-size:11px; line-height:1.45; max-width:220px; box-shadow:0 4px 14px rgba(0,0,0,0.4); color:var(--text); }
+  .geo-pulse-ring{ transform-box:fill-box; transform-origin:center; animation:geoPulse 2.4s ease-out infinite; }
+  @keyframes geoPulse{ 0%{ transform:scale(1); opacity:0.85; } 100%{ transform:scale(2.8); opacity:0; } }
+  .geo-marker-dot{ animation:geoDotGlow 2.4s ease-in-out infinite; }
+  @keyframes geoDotGlow{ 0%,100%{ opacity:1; } 50%{ opacity:0.7; } }
+  .geo-feed-row{ opacity:0; animation:geoFeedIn .3s ease-out forwards; }
+  @keyframes geoFeedIn{ from{ opacity:0; transform:translateY(-4px);} to{ opacity:1; transform:translateY(0);} }
+
+  /* ===================== MINI WORLD MAP (Executive tab widget) ===================== */
+  .mini-geo-wrap{ position:relative; margin-top:6px; border-radius:8px; overflow:hidden;
+    background:radial-gradient(ellipse at 50% 30%, rgba(35,58,87,0.35), rgba(10,23,40,0) 70%); }
+  #mini-geo-svg{ width:100%; height:auto; display:block; }
+
+  /* ===================== AI RISK ADVISOR ===================== */
+  .advisor-header{ display:flex; align-items:center; gap:12px; }
+  .advisor-avatar{ width:46px; height:46px; border-radius:50%; flex-shrink:0; display:flex; align-items:center;
+    justify-content:center; background:radial-gradient(circle at 32% 28%, var(--goldBright), var(--gold) 55%, var(--goldDim) 100%);
+    box-shadow:0 0 0 1px var(--goldDim), 0 2px 10px rgba(201,162,75,0.25); }
+  .advisor-name{ font-family:var(--display); font-size:16px; font-weight:600; color:var(--text); }
+  .advisor-tagline{ font-size:11.5px; color:var(--textMuted); margin-top:1px; }
+  .advisor-status{ display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--low); margin-left:auto; flex-shrink:0; }
+  .advisor-status .dot{ width:7px; height:7px; border-radius:50%; background:var(--low); box-shadow:0 0 6px var(--low); animation:geoDotGlow 2s ease-in-out infinite; }
+
+  .mode-switch{ display:inline-flex; border-radius:999px; padding:2px; background:var(--bgPanelAlt); border:1px solid var(--line); flex-shrink:0; }
+  .mode-switch button{ border:none; background:transparent; font-size:11px; font-weight:600; padding:5px 11px; border-radius:999px; color:var(--textMuted); }
+  .mode-switch button.on{ background:rgba(201,162,75,0.16); color:var(--goldBright); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{ font-size:11px; padding:5px 10px; border-radius:999px; background:var(--bgPanelAlt); border:1px solid var(--line);
+    color:var(--textMuted); transition:.12s; text-align:left; }
+  .chip:hover{ color:var(--goldBright); border-color:var(--goldDim); }
+
+  .chat-window{ display:flex; flex-direction:column; gap:12px; padding:14px 4px; max-height:480px; overflow-y:auto; }
+  .chat-row{ display:flex; gap:9px; max-width:100%; }
+  .chat-row.user{ flex-direction:row-reverse; }
+  .chat-avatar{ width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700; margin-top:2px; }
+  .chat-avatar.assistant{ background:radial-gradient(circle at 32% 28%, var(--goldBright), var(--goldDim)); color:#20160A; }
+  .chat-avatar.user{ background:var(--bgPanelAlt); border:1px solid var(--line); color:var(--textMuted); }
+  .chat-bubble{ font-size:13px; line-height:1.55; padding:10px 13px; border-radius:12px; max-width:78%; }
+  .chat-row.assistant .chat-bubble{ background:var(--bgPanelAlt); border:1px solid var(--line); border-top-left-radius:3px; }
+  .chat-row.user .chat-bubble{ background:rgba(201,162,75,0.13); border:1px solid var(--goldDim); border-top-right-radius:3px; color:var(--text); }
+  .chat-bubble p{ margin:0 0 8px; }
+  .chat-bubble p:last-child{ margin-bottom:0; }
+  .chat-bubble ul{ margin:4px 0 8px; padding-left:18px; }
+  .chat-bubble li{ margin-bottom:3px; }
+  .chat-bubble strong{ color:var(--goldBright); font-weight:600; }
+  .chat-bubble .src-line{ margin-top:6px; padding-top:6px; border-top:1px solid var(--lineSoft); font-size:10.5px; color:var(--textFaint); }
+
+  .typing-dots{ display:inline-flex; gap:3px; align-items:center; padding:2px 0; }
+  .typing-dots span{ width:5px; height:5px; border-radius:50%; background:var(--textMuted); animation:typingBounce 1.1s infinite ease-in-out; }
+  .typing-dots span:nth-child(2){ animation-delay:.15s; }
+  .typing-dots span:nth-child(3){ animation-delay:.3s; }
+  @keyframes typingBounce{ 0%,60%,100%{ transform:translateY(0); opacity:.4; } 30%{ transform:translateY(-4px); opacity:1; } }
+
+  .chat-input-row{ display:flex; gap:8px; align-items:flex-end; border-top:1px solid var(--line); padding-top:10px; margin-top:2px; }
+  .chat-input-row textarea{ flex:1; resize:none; min-height:40px; max-height:120px; font-size:13px; border-radius:8px;
+    padding:9px 11px; background:var(--bgPanelAlt); border:1px solid var(--line); color:var(--text); line-height:1.4; }
+  .chat-input-row textarea:focus{ outline:none; border-color:var(--goldDim); }
+  .chat-send-btn{ flex-shrink:0; width:40px; height:40px; border-radius:8px; background:var(--gold); border:none;
+    display:flex; align-items:center; justify-content:center; color:#1a1206; transition:.12s; }
+  .chat-send-btn:hover{ background:var(--goldBright); }
+  .chat-send-btn:disabled{ opacity:.45; cursor:default; }
+  .chat-disclaimer{ font-size:10.5px; color:var(--textFaint); margin-top:8px; text-align:center; }
+
+  /* ---- Financial Lifecycle wheel ---- */
+  .lc-layout{ display:grid; grid-template-columns:1fr; gap:24px; align-items:start; margin-top:18px; }
+  @media(min-width:900px){ .lc-layout{ grid-template-columns:340px 1fr; } }
+  .lc-wheel-col{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .lc-wheel-wrap{ position:relative; width:300px; height:300px; max-width:100%; flex-shrink:0; }
+  .lc-wheel-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .lc-segment{ cursor:pointer; transition:filter .15s, opacity .15s; }
+  .lc-segment:hover{ filter:brightness(1.18); }
+  .lc-segment.lc-active{ filter:brightness(1.28) saturate(1.1); }
+  .lc-segment:focus-visible, .lc-quad-label:focus-visible{ outline:2px solid var(--goldBright); outline-offset:2px; }
+  .lc-band-label{ position:absolute; font-family:var(--mono); font-size:12px; font-weight:700; color:#0A1728;
+    transform:translate(-50%,-50%); pointer-events:none; text-shadow:0 1px 0 rgba(255,255,255,0.18); letter-spacing:.02em; }
+  .lc-quad-label{ position:absolute; width:104px; transform:translate(-50%,-50%); text-align:center; cursor:pointer;
+    padding:5px 6px; border-radius:8px; transition:.15s; }
+  .lc-quad-label:hover{ background:rgba(201,162,75,0.10); }
+  .lc-quad-label.lc-active{ background:rgba(201,162,75,0.14); box-shadow:0 0 0 1px var(--goldDim); }
+  .lc-quad-label .name{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text); line-height:1.25; }
+  .lc-quad-label .sub{ font-size:9.5px; color:var(--textMuted); margin-top:2px; }
+  .lc-center{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:118px; height:118px;
+    border-radius:50%; background:var(--bgPanel); border:1px solid var(--goldDim); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; box-shadow:inset 0 0 22px rgba(0,0,0,0.35); text-align:center; }
+  .lc-center .age{ font-family:var(--mono); font-size:28px; font-weight:700; color:var(--goldBright); line-height:1; }
+  .lc-center .lbl{ font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:var(--textFaint); margin-top:4px; }
+  .lc-pointer-wrap{ position:absolute; left:50%; top:50%; width:0; height:0; }
+  .lc-pointer{ position:absolute; left:0; top:0; width:2px; height:150px; margin-left:-1px; margin-top:-150px;
+    transform-origin:50% 150px; transition:transform 1.15s cubic-bezier(.22,1.1,.32,1); }
+  .lc-pointer .tip{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:0; height:0;
+    border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:14px solid var(--goldBright);
+    filter:drop-shadow(0 0 6px rgba(232,200,119,0.75)); }
+  .lc-pointer .shaft{ position:absolute; top:14px; left:50%; width:2px; height:calc(100% - 14px); transform:translateX(-50%);
+    background:linear-gradient(to bottom, var(--goldBright), var(--goldDim) 85%); opacity:.85; }
+  .lc-pointer .pulse{ position:absolute; top:-4px; left:50%; width:10px; height:10px; margin-left:-5px; border-radius:50%;
+    background:var(--goldBright); animation:geoPulse 2s ease-out infinite; }
+  .lc-age-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .lc-age-row .input{ width:76px; margin-top:0; text-align:center; }
+  .lc-stagebar{ display:flex; width:100%; border-radius:8px; overflow:hidden; height:8px; margin-top:10px; border:1px solid var(--line); }
+  .lc-stagebar span{ height:100%; }
+  .lc-panel{ border-radius:10px; padding:14px 16px; background:var(--bgPanelAlt); border:1px solid var(--line); }
+  .lc-panel + .lc-panel{ margin-top:12px; }
+  .lc-panel .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:7px; flex-shrink:0; }
+  .lc-chip{ display:inline-flex; align-items:center; font-size:10.5px; font-weight:600; letter-spacing:.03em; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px; }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="app">
+  <div class="header">
+    <div class="header-inner">
+      <div class="eyebrow-top">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Special Risks &amp; Crisis Response Underwriting</span>
+      </div>
+      <h1>Kidnap &amp; Ransom Exposure &amp; Underwriting Intelligence</h1>
+      <p class="subtitle" id="subtitle-line"></p>
+    </div>
+    <button class="presenter-toggle-btn" id="presenter-toggle-btn">Presenter Mode</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tabs-inner" id="tabs-inner"></div>
+  </div>
+
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+/* ======================================================================
+   DESIGN TOKENS
+====================================================================== */
+const T = {
+  bg:"#0A1728", bgPanel:"#0F2038", bgPanelAlt:"#13253F",
+  line:"#233A57", lineSoft:"#1A2E4A",
+  gold:"#C9A24B", goldBright:"#E8C877", goldDim:"#8A7238",
+  text:"#EDE8DA", textMuted:"#8FA2BD", textFaint:"#5C7091",
+  low:"#4C9A6A", moderate:"#D6A537", high:"#D97A34", critical:"#C0473F",
+};
+
+function bandForScore(score){
+  if(score<=30) return {label:"Low", color:T.low};
+  if(score<=60) return {label:"Moderate", color:T.moderate};
+  if(score<=80) return {label:"High", color:T.high};
+  return {label:"Critical", color:T.critical};
+}
+
+/* ======================================================================
+   REFERENCE DATA — illustrative/synthetic only
+====================================================================== */
+const SECTORS = [
+  { name:"Extractive – Oil, Gas & Mining",  sectorRisk:15, incidentProb:0.030, avgRansomBase:750000,  avgCaptivityDays:45, travelExposure:9 },
+  { name:"NGO & Humanitarian",              sectorRisk:14, incidentProb:0.045, avgRansomBase:150000,  avgCaptivityDays:60, travelExposure:8 },
+  { name:"Maritime & Shipping",             sectorRisk:13, incidentProb:0.025, avgRansomBase:2000000, avgCaptivityDays:90, travelExposure:7 },
+  { name:"Journalism & Media",              sectorRisk:12, incidentProb:0.020, avgRansomBase:300000,  avgCaptivityDays:75, travelExposure:8 },
+  { name:"Diplomatic & Government Contractors", sectorRisk:13, incidentProb:0.022, avgRansomBase:400000, avgCaptivityDays:40, travelExposure:8 },
+  { name:"Engineering & Field Infrastructure", sectorRisk:11, incidentProb:0.018, avgRansomBase:500000, avgCaptivityDays:30, travelExposure:7 },
+  { name:"Financial Services (Exec Travel)", sectorRisk:8,  incidentProb:0.006, avgRansomBase:1000000, avgCaptivityDays:14, travelExposure:4 },
+  { name:"Technology & Telecoms (Emerging Mkts)", sectorRisk:9, incidentProb:0.010, avgRansomBase:350000, avgCaptivityDays:21, travelExposure:5 },
+];
+
+/* ======================================================================
+   GEOGRAPHIC HOTSPOTS — illustrative/synthetic only, tied to SECTORS above.
+   Coordinates are approximate regional centroids for visualisation, not
+   precise incident locations.
+====================================================================== */
+const GEO_HOTSPOTS = [
+  { name:"Niger Delta, Nigeria", lat:5.0, lon:6.5, sector:"Extractive – Oil, Gas & Mining", note:"Onshore/offshore oil infrastructure; historically elevated abduction-for-ransom risk to expatriate crew." },
+  { name:"Eastern DRC (Kivu)", lat:-2.5, lon:28.9, sector:"Extractive – Oil, Gas & Mining", note:"Artisanal and industrial mining areas with active armed-group presence." },
+  { name:"Maracaibo Basin, Venezuela", lat:10.6, lon:-71.6, sector:"Extractive – Oil, Gas & Mining", note:"Onshore oil basin with periodic criminal extortion activity." },
+  { name:"Juba, South Sudan", lat:4.85, lon:31.6, sector:"NGO & Humanitarian", note:"Field operations hub for humanitarian missions in a volatile security environment." },
+  { name:"Sahel Corridor (Mali)", lat:16.3, lon:-0.05, sector:"NGO & Humanitarian", note:"Cross-border insurgent activity affecting aid convoys and field staff." },
+  { name:"Sana'a, Yemen", lat:15.35, lon:44.2, sector:"NGO & Humanitarian", note:"Protracted conflict zone with restricted humanitarian access." },
+  { name:"Mogadishu, Somalia", lat:2.04, lon:45.3, sector:"NGO & Humanitarian", note:"Long-running kidnap-for-ransom exposure for aid and media personnel." },
+  { name:"Gulf of Guinea", lat:3.5, lon:4.0, sector:"Maritime & Shipping", note:"Persistent piracy and crew-kidnapping corridor for commercial shipping." },
+  { name:"Gulf of Aden / Bab-el-Mandeb", lat:12.5, lon:47.0, sector:"Maritime & Shipping", note:"Chokepoint with a history of vessel hijacking and crew hostage-taking." },
+  { name:"Sulu Sea, Philippines", lat:6.0, lon:121.0, sector:"Maritime & Shipping", note:"Archipelagic waters with recurring maritime kidnapping incidents." },
+  { name:"Culiacán, Mexico", lat:24.8, lon:-107.4, sector:"Journalism & Media", note:"Cartel-linked violence creates elevated risk for reporting crews." },
+  { name:"Idlib, Syria", lat:35.9, lon:36.6, sector:"Journalism & Media", note:"Active conflict zone, historically high risk for foreign correspondents." },
+  { name:"Kabul, Afghanistan", lat:34.5, lon:69.2, sector:"Journalism & Media", note:"Unstable security environment affecting press and field crews." },
+  { name:"Baghdad, Iraq", lat:33.3, lon:44.4, sector:"Diplomatic & Government Contractors", note:"Government and contractor personnel remain a target profile in the region." },
+  { name:"Tripoli, Libya", lat:32.9, lon:13.2, sector:"Diplomatic & Government Contractors", note:"Fragmented security control affecting diplomatic and contractor movement." },
+  { name:"Kandahar, Afghanistan", lat:31.6, lon:65.7, sector:"Diplomatic & Government Contractors", note:"Contractor and reconstruction personnel face elevated regional threat." },
+  { name:"Ouagadougou, Burkina Faso", lat:12.4, lon:-1.5, sector:"Engineering & Field Infrastructure", note:"Infrastructure projects operating amid regional insurgent activity." },
+  { name:"Katanga, DRC", lat:-11.7, lon:27.5, sector:"Engineering & Field Infrastructure", note:"Remote field engineering sites with limited security infrastructure." },
+  { name:"PNG Highlands", lat:-5.5, lon:144.0, sector:"Engineering & Field Infrastructure", note:"Resource-project field teams exposed to tribal and criminal conflict." },
+  { name:"Mexico City, Mexico", lat:19.4, lon:-99.1, sector:"Financial Services (Exec Travel)", note:"Express kidnapping risk to visiting and resident executives." },
+  { name:"Johannesburg, South Africa", lat:-26.2, lon:28.0, sector:"Financial Services (Exec Travel)", note:"Elevated urban crime risk affecting executive travel security." },
+  { name:"Caracas, Venezuela", lat:10.5, lon:-66.9, sector:"Financial Services (Exec Travel)", note:"Economic instability correlated with rising extortion incidents." },
+  { name:"Lagos, Nigeria", lat:6.5, lon:3.4, sector:"Technology & Telecoms (Emerging Mkts)", note:"Rapidly growing tech hub with uneven urban security coverage." },
+  { name:"Mindanao, Philippines", lat:7.5, lon:125.0, sector:"Technology & Telecoms (Emerging Mkts)", note:"Telecoms field infrastructure exposed to localised armed conflict." },
+  { name:"Karachi, Pakistan", lat:24.9, lon:67.0, sector:"Technology & Telecoms (Emerging Mkts)", note:"Dense urban environment with periodic targeted crime against foreign staff." },
+];
+function geoIntensity(sectorName){
+  const s = SECTORS.find(x=>x.name===sectorName);
+  if(!s) return 50;
+  return Math.max(5, Math.min(100, Math.round(s.incidentProb*1400 + s.travelExposure*3)));
+}
+
+const LIMIT_BANDS = [
+  { label:"Up to £1m",  base:3000,  mult:0.4 },
+  { label:"£1m–£5m",    base:8000,  mult:1 },
+  { label:"£5m–£15m",   base:20000, mult:2.5 },
+  { label:"£15m+",      base:55000, mult:6 },
+];
+
+const WEIGHTS = {
+  protectionDetail:0.15, crisisResponse:0.10, heat:0.10, travelTracking:0.10,
+  priorIncidents:0.20, sectorRisk:0.15, travelFrequency:0.10, regionInstability:0.10,
+};
+
+/* ======================================================================
+   SCORING ENGINE
+====================================================================== */
+function computeScore({protectionDetail, crisisResponse, heat, travelTracking, priorIncidents, sectorRisk, travelFrequency, regionInstability}){
+  const protectionSub = protectionDetail ? 0 : 100;
+  const crisisSub = crisisResponse ? 0 : 100;
+  const heatSub = heat==="Yes" ? 0 : heat==="Partial" ? 50 : 100;
+  const trackingSub = travelTracking ? 0 : 100;
+  const incidentSub = priorIncidents===0 ? 0 : priorIncidents===1 ? 60 : 100;
+  const sectorSub = (sectorRisk/15)*100;
+  const freqSub = (travelFrequency/10)*100;
+  const instabilitySub = (regionInstability/10)*100;
+  const raw = WEIGHTS.protectionDetail*protectionSub + WEIGHTS.crisisResponse*crisisSub + WEIGHTS.heat*heatSub +
+    WEIGHTS.travelTracking*trackingSub + WEIGHTS.priorIncidents*incidentSub + WEIGHTS.sectorRisk*sectorSub +
+    WEIGHTS.travelFrequency*freqSub + WEIGHTS.regionInstability*instabilitySub;
+  return Math.round(raw);
+}
+function computePremium(score, bandMult){ return Math.round(bandMult*(2200+320*score)); }
+function computeRetention(score, bandLabel){
+  const bandBase = {"Up to £1m":5000,"£1m–£5m":15000,"£5m–£15m":50000,"£15m+":150000}[bandLabel];
+  const band = bandForScore(score).label;
+  const mult = {Low:1, Moderate:1.5, High:2.5, Critical:4}[band];
+  return Math.round(bandBase*mult);
+}
+function fmtGBP(n){ return "£" + Math.round(n).toLocaleString("en-GB"); }
+
+/* ======================================================================
+   SYNTHETIC PORTFOLIO (seeded)
+====================================================================== */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed>>>15), 1 | seed);
+    t = (t + Math.imul(t ^ (t>>>7), 61 | t)) ^ t;
+    return ((t ^ (t>>>14)) >>> 0) / 4294967296;
+  };
+}
+function buildPortfolio(){
+  const rand = mulberry32(41203);
+  const policies = [];
+  for(let i=0;i<100;i++){
+    const sector = SECTORS[Math.floor(rand()*SECTORS.length)];
+    const band = LIMIT_BANDS[Math.floor(rand()*LIMIT_BANDS.length)];
+    const protectionDetail = rand()<0.45;
+    const crisisResponse = rand()<0.55;
+    const hRoll = rand();
+    const heat = hRoll<0.30 ? "No" : hRoll<0.60 ? "Partial" : "Yes";
+    const travelTracking = rand()<0.50;
+    const iRoll = rand();
+    const priorIncidents = iRoll<0.85 ? 0 : iRoll<0.96 ? 1 : 2;
+    const travelFrequency = Math.floor(rand()*11);
+    const regionInstability = Math.floor(rand()*11);
+    // Client age — skewed toward the peak-earning 41–55 consolidation band,
+    // since that's where K&R-relevant wealth and public profile concentrate,
+    // while still covering the full 22–82 span.
+    const ageRoll = rand();
+    const age = ageRoll<0.20 ? 22+Math.floor(rand()*19)   // 22–40 accumulation
+              : ageRoll<0.55 ? 41+Math.floor(rand()*15)   // 41–55 consolidation
+              : ageRoll<0.82 ? 56+Math.floor(rand()*10)   // 56–65 spending
+              : 66+Math.floor(rand()*17);                 // 66–82 gifting/legacy
+    const score = computeScore({protectionDetail, crisisResponse, heat, travelTracking, priorIncidents,
+      sectorRisk:sector.sectorRisk, travelFrequency, regionInstability});
+    const premium = computePremium(score, band.mult);
+    const claimProb = Math.min(0.35, (score/100)*sector.incidentProb*1.5);
+    const hadClaim = rand()<claimProb;
+    const severity = hadClaim ? Math.round(sector.avgRansomBase*(0.4+(score/100)*1.3)*(0.6+rand()*0.8)) : 0;
+    policies.push({ id:i+1, sector:sector.name, band:band.label, protectionDetail, crisisResponse, heat,
+      travelTracking, priorIncidents, travelFrequency, regionInstability, age, score, premium, hadClaim, severity });
+  }
+  return policies;
+}
+
+function heatColor(value, min, max){
+  const t = max>min ? (value-min)/(max-min) : 0;
+  const stops = [[76,154,106],[214,165,55],[217,122,52],[192,71,63]];
+  const idx = Math.min(stops.length-2, Math.floor(t*(stops.length-1)));
+  const localT = t*(stops.length-1) - idx;
+  const c1 = stops[idx], c2 = stops[idx+1];
+  const c = c1.map((v,i)=>Math.round(v+(c2[i]-v)*localT));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+/* ======================================================================
+   ICONS — small inline SVG set
+====================================================================== */
+const ICONS = {
+  "alert-triangle": '<path d="M12 3 2 20h20z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="16.7" r="0.6" fill="currentColor" stroke="none"/>',
+  "chevron-right": '<path d="M9 6l6 6-6 6"/>',
+  "skull": '<path d="M12 2a8 8 0 0 0-8 8c0 3 1.5 5 3 6.5V19a1 1 0 0 0 1 1h1v2h2v-2h2v2h2v-2h1a1 1 0 0 0 1-1v-2.5c1.5-1.5 3-3.5 3-6.5a8 8 0 0 0-8-8z"/><circle cx="9" cy="10" r="1.4"/><circle cx="15" cy="10" r="1.4"/>',
+  "dollar": '<circle cx="12" cy="12" r="9"/><path d="M12 6.5v11M15.2 9.3c0-1.4-1.4-2.3-3.2-2.3s-3.2 1-3.2 2.3 1.4 1.9 3.2 2.3 3.2 1 3.2 2.4-1.4 2.3-3.2 2.3-3.2-1-3.2-2.3"/>',
+  "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 3.2"/>',
+  "search": '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/>',
+  "arrows-ud": '<path d="M7 4v16"/><path d="M4 7l3-3 3 3"/><path d="M17 20V4"/><path d="M14 17l3 3 3-3"/>',
+  "trend-up": '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  "trend-down": '<path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/>',
+  "minus": '<line x1="5" y1="12" x2="19" y2="12"/>',
+  "rotate-ccw": '<path d="M3.5 12a8.5 8.5 0 1 0 2.8-6.3L3.5 8"/><path d="M3.5 3v5h5"/>',
+  "building": '<rect x="4" y="2.5" width="16" height="19" rx="1"/><path d="M8.5 6.5h1M14.5 6.5h1M8.5 10.5h1M14.5 10.5h1M8.5 14.5h1M14.5 14.5h1M9.5 21.5v-3h5v3"/>',
+  "x": '<line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/>',
+  "user-check": '<circle cx="9" cy="8" r="4"/><path d="M2.5 21c0-4 3-6.5 6.5-6.5s5.4 1.5 6.2 3.8"/><path d="M16.5 12.5l2 2 4-4"/>',
+  "phone-call": '<path d="M22 16.9v2a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.2 1h2a2 2 0 0 1 2 1.7c.1 1 .4 2.1.7 3.1a2 2 0 0 1-.5 2.1L7 9.3a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.5c1 .3 2 .6 3.1.7a2 2 0 0 1 1.7 2z"/>',
+  "eye": '<path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  "grad-cap": '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 10v6"/>',
+  "plane": '<path d="M12 2v20M12 2l6 8-6-2-6 2 6-8z"/><path d="M6 14l-3 5 3-1.2M18 14l3 5-3-1.2"/>',
+  "globe": '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.5 4 5.7 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.7-4-9s1.4-6.5 4-9z"/>',
+  "shield-check": '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/>',
+};
+function icon(name, size=14, color="currentColor", extraStyle=""){
+  const body = ICONS[name] || "";
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${extraStyle}">${body}</svg>`;
+}
+
+/* ======================================================================
+   RISK GAUGE (SVG)
+====================================================================== */
+function riskGaugeSVG(score){
+  const band = bandForScore(score);
+  const angle = -90 + (score/100)*180;
+  const r = 70, cx = 90, cy = 90;
+  const toXY = (deg)=>{ const rad = deg*Math.PI/180; return [cx + r*Math.cos(rad), cy + r*Math.sin(rad)]; };
+  const segs = [
+    {from:-90, to:-36, color:T.low}, {from:-36, to:18, color:T.moderate},
+    {from:18, to:54, color:T.high}, {from:54, to:90, color:T.critical},
+  ];
+  const arcPath = (from,to)=>{ const [x1,y1]=toXY(from), [x2,y2]=toXY(to); return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`; };
+  const [nx, ny] = toXY(angle);
+  const arcs = segs.map(s=>`<path d="${arcPath(s.from,s.to)}" stroke="${s.color}" stroke-width="10" fill="none" opacity="0.85"/>`).join("");
+  return `
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <svg width="180" height="112" viewBox="0 0 180 112">
+      ${arcs}
+      <line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${T.goldBright}" stroke-width="2.5"/>
+      <circle cx="${cx}" cy="${cy}" r="5" fill="${T.goldBright}"/>
+    </svg>
+    <div style="font-family:var(--mono);font-size:28px;font-weight:600;margin-top:-8px;color:${band.color};">${score}</div>
+    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-top:2px;color:${band.color};">${band.label} Risk</div>
+  </div>`;
+}
+
+function deltaPillHTML(value, reference, goodDirection="down", decimals=0){
+  const diff = value - reference;
+  const pct = reference !== 0 ? (diff/reference)*100 : 0;
+  const flat = Math.abs(diff) < 0.5;
+  const better = goodDirection==="down" ? diff<0 : diff>0;
+  const color = flat ? T.textFaint : better ? T.low : T.critical;
+  const ic = flat ? "minus" : diff>0 ? "trend-up" : "trend-down";
+  const txt = flat ? "on par" : `${diff>0?"+":""}${pct.toFixed(decimals)}%`;
+  return `<span class="pill" style="color:${color};">${icon(ic,12,color)}${txt}</span>`;
+}
+
+function trafficLightHTML(level){
+  const color = level==="Low" ? T.low : level==="Moderate" ? T.moderate : T.critical;
+  return `<span class="traffic" style="color:${color};"><span class="dot" style="background:${color};"></span>${level} Exposure</span>`;
+}
+
+/* ======================================================================
+   STATE
+====================================================================== */
+const portfolio = buildPortfolio();
+
+function computeAgg(portfolio){
+  const n = portfolio.length;
+  const avgScore = portfolio.reduce((a,c)=>a+c.score,0)/n;
+  const avgPremium = portfolio.reduce((a,c)=>a+c.premium,0)/n;
+  const claimsCos = portfolio.filter(c=>c.hadClaim);
+  const totalPremium = portfolio.reduce((a,c)=>a+c.premium,0);
+  const totalIncurred = claimsCos.reduce((a,c)=>a+c.severity,0);
+  const lossRatio = totalPremium ? totalIncurred/totalPremium : 0;
+  const avgIncidentCost = claimsCos.length ? claimsCos.reduce((a,c)=>a+c.severity,0)/claimsCos.length : 0;
+
+  const bySector = SECTORS.map(s=>{
+    const cos = portfolio.filter(c=>c.sector===s.name);
+    const avgS = cos.length ? cos.reduce((a,c)=>a+c.score,0)/cos.length : 0;
+    const avgP = cos.length ? cos.reduce((a,c)=>a+c.premium,0)/cos.length : 0;
+    const claims = cos.filter(c=>c.hadClaim);
+    const freq = cos.length ? claims.length/cos.length : 0;
+    const sev = claims.length ? claims.reduce((a,c)=>a+c.severity,0)/claims.length : 0;
+    return { sector:s.name, avgScore:Math.round(avgS), avgScoreExact:avgS, avgPremium:avgP, freq, sev, count:cos.length, incidentProb:s.incidentProb };
+  }).sort((a,b)=>b.avgScore-a.avgScore);
+
+  const vulnCounts = [
+    { label:"No Protection Detail", count:portfolio.filter(c=>!c.protectionDetail).length },
+    { label:"No Crisis Response Retainer", count:portfolio.filter(c=>!c.crisisResponse).length },
+    { label:"No HEAT Training", count:portfolio.filter(c=>c.heat!=="Yes").length },
+    { label:"No Travel Tracking", count:portfolio.filter(c=>!c.travelTracking).length },
+    { label:"Prior Incident(s)", count:portfolio.filter(c=>c.priorIncidents>0).length },
+    { label:"High Travel Frequency", count:portfolio.filter(c=>c.travelFrequency>=6).length },
+  ].sort((a,b)=>b.count-a.count);
+
+  const bandCounts = ["Low","Moderate","High","Critical"].map(label=>({
+    label, count: portfolio.filter(c=>bandForScore(c.score).label===label).length,
+    color: {Low:T.low, Moderate:T.moderate, High:T.high, Critical:T.critical}[label],
+  }));
+
+  return { avgScore, avgPremium, avgIncidentCost, bySector, vulnCounts, bandCounts, totalClaims:claimsCos.length, lossRatio, totalPremium };
+}
+const agg = computeAgg(portfolio);
+
+/* ---- Synthetic 12-month trend (illustrative only, anchored to book averages) ---- */
+function buildTrend(){
+  const rand = mulberry32(9001);
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let lr = Math.max(0.15, agg.lossRatio*0.85);
+  let prem = (agg.totalPremium/12) * 0.85;
+  return months.map(m=>{
+    lr = Math.max(0.05, Math.min(1.3, lr + (rand()-0.48)*0.09));
+    prem = Math.max(prem*0.7, prem*(1+(rand()-0.42)*0.16));
+    return { month:m, lossRatio: lr, premiumWritten: prem };
+  });
+}
+const trendData = buildTrend();
+
+const defaultSim = {
+  sectorIdx:6, bandIdx:1, protectionDetail:true, crisisResponse:true, heat:"Yes", travelTracking:true,
+  priorIncidents:0, travelFrequency:3, regionInstability:3,
+};
+
+const state = {
+  tab: "intro",
+  sim: {...defaultSim},
+  pQuery: "", pSectorFilter: "All", pStageFilter: "All", pSortKey: "score", pSortDir: "desc", pSelectedId: null,
+  chat: { mode:"technical", messages: [], loading:false },
+  lifecycle: { age: 42, totalRotation: 0, ready:false },
+  presenter: { on:false, notesOpen:true },
+  execTrendMetric: "lossRatio",
+};
+
+const TABS = [
+  { id:"intro", label:"Introduction" },
+  { id:"lifecycle", label:"Financial Lifecycle" },
+  { id:"executive", label:"Executive Dashboard" },
+  { id:"advisor", label:"AI Risk Advisor" },
+  { id:"simulator", label:"Underwriting Simulator" },
+  { id:"portfolio", label:"Portfolio Explorer" },
+  { id:"heatmap", label:"Sector Heat Map" },
+  { id:"threat", label:"Threat Exposure" },
+  { id:"geo", label:"Geographic Exposure" },
+];
+
+document.getElementById("subtitle-line").textContent =
+  `Portfolio of ${portfolio.length} synthetic policies · ${SECTORS.length} client sectors · illustrative data only`;
+
+const tabsInner = document.getElementById("tabs-inner");
+tabsInner.innerHTML = TABS.map(t=>`<button class="tab-btn${state.tab===t.id?" active":""}" data-tab="${t.id}">${t.label}</button>`).join("");
+function goToTab(tabId){
+  state.tab = tabId;
+  [...tabsInner.children].forEach(c=>c.classList.toggle("active", c.dataset.tab===state.tab));
+  renderContent();
+  renderPresenterBar();
+  const activeBtn = tabsInner.querySelector(".tab-btn.active");
+  if(activeBtn && typeof activeBtn.scrollIntoView === "function") activeBtn.scrollIntoView({block:"nearest", inline:"center", behavior:"smooth"});
+}
+tabsInner.addEventListener("click", (e)=>{
+  const btn = e.target.closest(".tab-btn");
+  if(!btn) return;
+  goToTab(btn.dataset.tab);
+});
+
+/* ======================================================================
+   PRESENTER / WALKTHROUGH MODE
+   A fixed Next/Previous bar that steps through TABS in order, plus a
+   short set of speaker-note bullets per tab, so this can be demoed live
+   without hunting for the right tab mid-flow.
+====================================================================== */
+const SPEAKER_NOTES = {
+  intro: [
+    "Introduce yourself and the 8-week internship scope across IT Support, DevOps, Cybersecurity and K&R.",
+    "Frame the deck as a synthetic, illustrative model — not live underwriting data.",
+    "Set up the throughline: technical background applied to an insurance problem.",
+  ],
+  lifecycle: [
+    "Explain that a client's financial lifecycle stage shapes K&R exposure as much as sector or geography.",
+    "Spin the wheel to a sample age and call out the current stage's travel/profile drivers.",
+    "Point out the book-composition panel — this ties the wheel directly into the real 100-policy portfolio.",
+  ],
+  executive: [
+    "Lead with the five headline KPIs: policies, avg score, avg premium, avg incident cost, loss ratio.",
+    "Use the 12-month trend to show the book isn't static — toggle between loss ratio and premium written.",
+    "Call out the risk band distribution and flag the Critical-band callout box if present.",
+  ],
+  advisor: [
+    "Demo a live question to the AI Risk Advisor to show how underwriters could query the model in natural language.",
+    "Toggle technical vs. plain-English mode to show it serves both audiences.",
+  ],
+  simulator: [
+    "Walk through adjusting a control (e.g. remove protection detail) and show the score/premium react instantly.",
+    "Highlight the sector benchmark comparison and generated recommendations/exclusions.",
+  ],
+  portfolio: [
+    "Show the search, sector filter, and the new lifecycle-stage filter working together.",
+    "Click a row to open the full policy profile with its risk gauge and control gaps.",
+  ],
+  heatmap: [
+    "Read the heat map left-to-right: darker/redder cells mark the highest-risk sector combinations.",
+  ],
+  threat: [
+    "Use this tab to ground the abstract score in concrete threat categories per sector.",
+  ],
+  geo: [
+    "Close on the live-feeling global map — it's the most visual tab, good for a strong finish.",
+    "Mention the rolling signal log as a nod to real-time monitoring tooling.",
+  ],
+};
+
+function renderPresenterBar(){
+  document.body.classList.toggle("presenter-on", state.presenter.on);
+  let bar = document.getElementById("presenter-bar");
+  let notes = document.getElementById("presenter-notes");
+  if(!state.presenter.on){
+    if(bar) bar.remove();
+    if(notes) notes.remove();
+    return;
+  }
+  const idx = TABS.findIndex(t=>t.id===state.tab);
+  const atStart = idx<=0, atEnd = idx>=TABS.length-1;
+
+  if(!bar){
+    bar = document.createElement("div");
+    bar.className = "presenter-bar";
+    bar.id = "presenter-bar";
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `
+    <button class="presenter-nav-btn" id="presenter-prev" ${atStart?"disabled":""}>${icon("chevron-right",13,"currentColor","transform:rotate(180deg);")} Previous</button>
+    <span class="step-label">${idx+1} / ${TABS.length} &middot; ${TABS[idx].label}</span>
+    <button class="presenter-nav-btn" id="presenter-next" ${atEnd?"disabled":""}>Next ${icon("chevron-right",13)}</button>
+    <button class="presenter-nav-btn" id="presenter-notes-toggle">${state.presenter.notesOpen?"Hide":"Show"} Notes</button>
+  `;
+  document.getElementById("presenter-prev").onclick = ()=>{ if(!atStart) goToTab(TABS[idx-1].id); };
+  document.getElementById("presenter-next").onclick = ()=>{ if(!atEnd) goToTab(TABS[idx+1].id); };
+  document.getElementById("presenter-notes-toggle").onclick = ()=>{ state.presenter.notesOpen = !state.presenter.notesOpen; renderPresenterBar(); };
+
+  if(!notes){
+    notes = document.createElement("div");
+    notes.className = "presenter-notes";
+    notes.id = "presenter-notes";
+    document.body.appendChild(notes);
+  }
+  const noteBullets = SPEAKER_NOTES[state.tab] || [];
+  if(state.presenter.notesOpen && noteBullets.length){
+    notes.style.display = "block";
+    notes.innerHTML = `
+      <div class="eyebrow" style="margin-bottom:6px;">Speaker Notes &middot; ${TABS[idx].label}</div>
+      <ul class="rec-list">${noteBullets.map(n=>`<li style="font-size:12px;">${icon("chevron-right",12,T.gold)}${n}</li>`).join("")}</ul>
+    `;
+  } else {
+    notes.style.display = "none";
+  }
+}
+
+document.getElementById("presenter-toggle-btn").addEventListener("click", ()=>{
+  state.presenter.on = !state.presenter.on;
+  document.getElementById("presenter-toggle-btn").classList.toggle("on", state.presenter.on);
+  renderPresenterBar();
+});
+
+const chartInstances = {};
+function destroyChart(key){ if(chartInstances[key]){ chartInstances[key].destroy(); delete chartInstances[key]; } }
+
+const content = document.getElementById("content");
+function renderContent(){
+  Object.keys(chartInstances).forEach(destroyChart);
+  if(state.tab!=="geo" && geoLogInterval){ clearInterval(geoLogInterval); geoLogInterval = null; }
+  if(state.tab==="intro") renderIntro();
+  else if(state.tab==="lifecycle") renderLifecycle();
+  else if(state.tab==="executive") renderExecutive();
+  else if(state.tab==="advisor") renderAdvisor();
+  else if(state.tab==="simulator") renderSimulator();
+  else if(state.tab==="portfolio") renderPortfolio();
+  else if(state.tab==="heatmap") renderHeatmap();
+  else if(state.tab==="threat") renderThreat();
+  else if(state.tab==="geo") renderGeo();
+}
+
+/* ======================================================================
+   INTRODUCTION TAB
+====================================================================== */
+function renderIntro(){
+  content.innerHTML = `
+    <div class="card" style="position:relative;overflow:hidden;padding:32px;">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg, var(--goldDim), var(--goldBright), var(--goldDim));"></div>
+
+      <div class="eyebrow" style="display:flex;align-items:center;gap:10px;">
+        <span style="width:26px;height:1px;background:var(--goldDim);display:inline-block;"></span>
+        Ascot Group &middot; Internship Presentation
+      </div>
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px;margin:18px 0 24px;flex-wrap:wrap;">
+        <div>
+          <h1 style="font-family:var(--display);font-weight:600;font-size:clamp(24px,4vw,36px);margin:0 0 6px;color:var(--text);">Richard Lamy</h1>
+          <div style="font-size:14px;color:var(--goldBright);font-weight:500;">Final-Year Cybersecurity &amp; Information Systems Student</div>
+          <div style="font-size:12px;color:var(--textMuted);margin-top:4px;">8-Week Internship &mdash; IT Support &middot; DevOps &middot; Cybersecurity &middot; Kidnap &amp; Ransom (K&amp;R)</div>
+        </div>
+        <div style="width:64px;height:64px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 32% 28%, var(--goldBright), var(--gold) 55%, var(--goldDim) 100%);box-shadow:0 0 0 1px var(--goldDim), 0 4px 18px rgba(201,162,75,0.30);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:600;color:#0A1728;">RL</div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">
+        ${["Cybersecurity","IT Support","DevOps","Kidnap & Ransom","Insurance Tech"].map(tag=>`
+          <span style="font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;padding:6px 12px;border-radius:20px;color:var(--goldBright);background:rgba(201,162,75,0.12);border:1px solid var(--goldDim);">${tag}</span>
+        `).join("")}
+      </div>
+
+      <div style="font-size:14px;line-height:1.75;color:var(--text);max-width:880px;">
+        <p style="margin:0 0 14px;">Hi everyone, my name is <strong style="color:var(--goldBright);font-weight:600;">Richard Lamy</strong>, and I am a final-year Cybersecurity &amp; Information Systems student. Over the past 8 weeks at <strong style="color:var(--goldBright);font-weight:600;">Ascot Group</strong>, I have had the opportunity to work across IT Support, DevOps, Cybersecurity, and the Kidnap &amp; Ransom (K&amp;R) team. This experience allowed me to develop a broad understanding of both technology and business operations while working on a variety of real-world projects.</p>
+        <p style="margin:0 0 14px;">Throughout my internship, I gained valuable exposure to enterprise systems, security operations, and insurance processes, while building strong relationships with colleagues across different teams. This project was my opportunity to demonstrate how my technical knowledge and cybersecurity background can add value within the insurance industry.</p>
+        <p style="margin:0;">While cybersecurity remains my passion, my time at Ascot has also given me a genuine interest in insurance and the important role technology plays in supporting risk assessment and decision-making. As I prepare to begin my final year at university, I can confidently say that this experience has shaped me into a more well-rounded professional and reinforced the impact technology can have across different industries.</p>
+      </div>
+
+      <div style="margin-top:26px;padding-top:16px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--textFaint);font-family:var(--mono);letter-spacing:0.03em;flex-wrap:wrap;gap:8px;">
+        <span style="color:var(--gold);font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">Ascot Group</span>
+        <span>Internship Close-Out &middot; 2026</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ======================================================================
+   FINANCIAL LIFECYCLE TAB
+====================================================================== */
+const LC_STAGES = [
+  { key:"accumulation", name:"Accumulation Stage", band:"18–40", ageMin:18, ageMax:40,
+    angleStart:0, angleEnd:90, color:"#E8C877",
+    focus:"Actively building wealth; higher risk tolerance; equity-heavy portfolios.",
+    krFocus:"Frequent business travel and emerging-market assignments typically drive the primary K&R exposure at this stage — cover is usually placed corporately, tied to travel frequency rather than net worth.",
+    concerns:["Frequent international / high-risk-territory travel","Emerging-market secondments and project work","Exposure driven by travel frequency, not yet by visible wealth"] },
+  { key:"consolidation", name:"Consolidation Stage", band:"41–55", ageMin:41, ageMax:55,
+    angleStart:90, angleEnd:180, color:"#C9A24B",
+    focus:"De-risking the portfolio; reducing equities in favour of fixed income ahead of retirement.",
+    krFocus:"Peak earning years combined with rising public/professional profile and family visibility make this the highest-attractiveness window for targeting — retention and limits are usually reviewed most closely here.",
+    concerns:["Peak earnings and rising public profile","Senior executive or principal status increases target attractiveness","Family members often added as named exposures"] },
+  { key:"spending", name:"Distribution / Spending Phase", band:"56–65", ageMin:56, ageMax:65,
+    angleStart:180, angleEnd:270, color:"#6E86A8",
+    focus:"Settling into retirement; income-only investing (annuities, T-bills); no-risk mandate.",
+    krFocus:"Business travel exposure declines but leisure and second-home travel rises, and residence security becomes more relevant than corporate travel security.",
+    concerns:["Business travel exposure falls; leisure travel exposure rises","Residence and family security displaces corporate travel security","Cover often migrates from a corporate to a personal/family line"] },
+  { key:"gifting", name:"Gifting / Legacy Stage", band:"65+", ageMin:66, ageMax:100,
+    angleStart:270, angleEnd:360, color:"#3A5578",
+    focus:"Estate planning, philanthropy and foundations; capital preserved, cash-backed only.",
+    krFocus:"Exposure shifts toward philanthropic and foundation-related travel, and increasingly toward the next generation, who often become the primary insured lives under a legacy programme.",
+    concerns:["Foundation, philanthropy and endowment-related travel","Next generation typically becomes the primary exposed life","Legacy/succession structuring intersects with cover design"] },
+];
+
+function lcStageForAge(age){
+  return LC_STAGES.find(s=>age>=s.ageMin && age<=s.ageMax) || (age<18 ? LC_STAGES[0] : LC_STAGES[LC_STAGES.length-1]);
+}
+function lcAngleForAge(age){
+  const st = lcStageForAge(age);
+  const frac = Math.min(1, Math.max(0, (age - st.ageMin) / (st.ageMax - st.ageMin)));
+  return st.angleStart + frac * (st.angleEnd - st.angleStart);
+}
+function lcPolar(cx, cy, r, angleDeg){
+  const rad = angleDeg * Math.PI / 180;
+  return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
+}
+function lcDonutPath(cx, cy, rOuter, rInner, startAngle, endAngle){
+  const oS = lcPolar(cx,cy,rOuter,startAngle), oE = lcPolar(cx,cy,rOuter,endAngle);
+  const iS = lcPolar(cx,cy,rInner,startAngle), iE = lcPolar(cx,cy,rInner,endAngle);
+  return `M ${oS.x.toFixed(2)} ${oS.y.toFixed(2)} A ${rOuter} ${rOuter} 0 0 1 ${oE.x.toFixed(2)} ${oE.y.toFixed(2)} L ${iE.x.toFixed(2)} ${iE.y.toFixed(2)} A ${rInner} ${rInner} 0 0 0 ${iS.x.toFixed(2)} ${iS.y.toFixed(2)} Z`;
+}
+
+function lcWheelSVG(){
+  const cx=150, cy=150, rOuter=140, rInner=88;
+  const segs = LC_STAGES.map((s,i)=>`<path class="lc-segment" data-idx="${i}" tabindex="0" role="button" aria-label="Jump wheel to ${s.name}, ${s.band} years" d="${lcDonutPath(cx,cy,rOuter,rInner,s.angleStart,s.angleEnd)}" style="fill:${s.color};stroke:#0A1728;stroke-width:2;"></path>`).join("");
+  const bandLabels = LC_STAGES.map(s=>{
+    const mid = (s.angleStart+s.angleEnd)/2;
+    const p = lcPolar(cx,cy,(rOuter+rInner)/2,mid);
+    return `<div class="lc-band-label" style="left:${p.x}px;top:${p.y}px;">${s.band}</div>`;
+  }).join("");
+  return `<svg viewBox="0 0 300 300">${segs}</svg>${bandLabels}`;
+}
+
+function lcQuadLabelsHTML(activeIdx){
+  const cx=150, cy=150, r=195;
+  return LC_STAGES.map((s,i)=>{
+    const mid=(s.angleStart+s.angleEnd)/2;
+    const p=lcPolar(cx,cy,r,mid);
+    return `<div class="lc-quad-label${i===activeIdx?" lc-active":""}" data-idx="${i}" tabindex="0" role="button" aria-label="Jump wheel to ${s.name}, ${s.band} years" style="left:${p.x}px;top:${p.y}px;">
+      <div class="name" style="color:${s.color};">${s.name}</div>
+      <div class="sub">${s.band} yrs</div>
+    </div>`;
+  }).join("");
+}
+
+/* ---- Book composition by lifecycle stage (ties the wheel to the real portfolio) ---- */
+function lcComposition(){
+  return LC_STAGES.map(s=>{
+    const cos = portfolio.filter(p=>lcStageForAge(p.age).key===s.key);
+    return { ...s, count: cos.length, pct: portfolio.length ? Math.round(cos.length/portfolio.length*100) : 0 };
+  });
+}
+function lcCompositionHTML(activeIdx){
+  const comp = lcComposition();
+  const active = comp[activeIdx];
+  return `
+    <div class="lc-panel" style="background:var(--bgPanel);border-color:${active.color}55;">
+      <div class="eyebrow" style="color:${active.color};">Book Composition &middot; This Portfolio</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;margin-top:2px;">
+        <strong style="color:${active.color};font-size:16px;">${active.pct}%</strong> of this ${portfolio.length}-policy book
+        (<strong>${active.count}</strong> polic${active.count===1?"y":"ies"}) currently sits in the
+        <strong style="color:${active.color};">${active.name}</strong>.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">
+        ${comp.map(c=>`
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:var(--textMuted);min-width:150px;flex-shrink:0;">${c.name}</span>
+            <div class="bar-track" style="flex:1;"><div class="bar-fill" style="width:${c.pct}%;background:${c.color};"></div></div>
+            <span class="mono" style="font-size:11px;font-weight:600;min-width:56px;text-align:right;flex-shrink:0;color:${c.color};">${c.count} &middot; ${c.pct}%</span>
+          </div>`).join("")}
+      </div>
+      <button class="btn-ghost" id="lc-view-portfolio" style="margin-top:12px;">${icon("chevron-right",12)} View these ${active.count} polic${active.count===1?"y":"ies"} in Portfolio Explorer</button>
+    </div>
+  `;
+}
+
+function lcPanelHTML(age){
+  const idx = LC_STAGES.indexOf(lcStageForAge(age));
+  const st = LC_STAGES[idx];
+  const nextIdx = Math.min(idx+1, LC_STAGES.length-1);
+  const nextSt = LC_STAGES[nextIdx];
+  const yearsLeft = st.ageMax - age;
+  const isFinal = idx === LC_STAGES.length-1;
+  const nextLine = isFinal
+    ? `This is the final lifecycle phase — planning here is ongoing rather than time-boxed.`
+    : `Next: <strong style="color:${nextSt.color};">${nextSt.name}</strong> (${nextSt.band}) — projected in <strong style="color:var(--goldBright);">${Math.max(yearsLeft,0)} year${yearsLeft===1?"":"s"}</strong>, around age ${st.ageMax+1}.`;
+
+  return `
+    <div class="lc-panel" style="border-color:${st.color}55;">
+      <div class="eyebrow" style="color:${st.color};">Current Position &middot; Age ${age}</div>
+      <div style="display:flex;align-items:center;margin-top:2px;"><span class="dot" style="background:${st.color};"></span>
+        <span style="font-family:var(--display);font-size:17px;font-weight:600;color:var(--text);">${st.name}</span></div>
+      <div class="muted" style="font-size:12.5px;margin-top:6px;line-height:1.55;">${st.focus}</div>
+      <div class="lc-stagebar">${LC_STAGES.map((s,i)=>`<span style="flex:${s.ageMax-s.ageMin+1};background:${s.color};opacity:${i===idx?1:0.28};"></span>`).join("")}</div>
+    </div>
+    <div class="lc-panel">
+      <div class="eyebrow">Next Phase</div>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.6;margin-top:4px;">${nextLine}</div>
+    </div>
+    <div class="lc-panel" style="background:var(--bgPanel);border-color:var(--goldDim);">
+      <div class="eyebrow">K&amp;R Underwriting Read-Through</div>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.6;margin-top:4px;">${st.krFocus}</div>
+      <ul class="rec-list" style="margin-top:10px;">${st.concerns.map(c=>`<li style="font-size:12px;">${icon("chevron-right",13,T.gold)}${c}</li>`).join("")}</ul>
+    </div>
+  `;
+}
+
+function lcUpdateDOM(){
+  const age = state.lifecycle.age;
+  const idx = LC_STAGES.indexOf(lcStageForAge(age));
+  const pointerEl = document.getElementById("lc-pointer");
+  const ageEl = document.getElementById("lc-center-age");
+  const inputEl = document.getElementById("lc-age-input");
+  if(pointerEl) pointerEl.style.transform = `rotate(${state.lifecycle.totalRotation}deg)`;
+  if(ageEl) ageEl.textContent = age;
+  if(inputEl) inputEl.value = age;
+  content.querySelectorAll(".lc-segment").forEach(el=>el.classList.toggle("lc-active", Number(el.dataset.idx)===idx));
+  content.querySelectorAll(".lc-quad-label").forEach(el=>el.classList.toggle("lc-active", Number(el.dataset.idx)===idx));
+  const panelWrap = document.getElementById("lc-panels");
+  if(panelWrap){
+    panelWrap.innerHTML = lcPanelHTML(age) + lcCompositionHTML(idx);
+    const viewBtn = document.getElementById("lc-view-portfolio");
+    if(viewBtn) viewBtn.onclick = ()=>{
+      state.pStageFilter = LC_STAGES[idx].key;
+      goToTab("portfolio");
+    };
+  }
+}
+
+function lcSpinTo(age){
+  age = Math.max(18, Math.min(100, Math.round(age)));
+  state.lifecycle.age = age;
+  const target = lcAngleForAge(age);
+  const prev = state.lifecycle.totalRotation;
+  const prevMod = ((prev % 360) + 360) % 360;
+  let delta = target - prevMod;
+  if(delta < 0) delta += 360;
+  const flourish = state.lifecycle.ready ? 720 : 0; // extra full spins after the first render
+  state.lifecycle.totalRotation = prev + delta + flourish;
+  state.lifecycle.ready = true;
+  lcUpdateDOM();
+}
+
+function renderLifecycle(){
+  const age = state.lifecycle.age;
+  const activeIdx = LC_STAGES.indexOf(lcStageForAge(age));
+
+  content.innerHTML = `
+    <div class="card" style="position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg, var(--goldDim), var(--goldBright), var(--goldDim));"></div>
+      <div class="eyebrow">Client Context &middot; Wealth &amp; Risk Alignment</div>
+      <h1 style="font-family:var(--display);font-weight:600;font-size:clamp(20px,3vw,26px);margin:2px 0 8px;color:var(--text);">The Financial Lifecycle, and What It Means for K&amp;R</h1>
+      <p class="muted" style="max-width:820px;font-size:13px;line-height:1.7;margin:0;">
+        A client's stage in their own financial lifecycle — how they're building, consolidating, drawing down or gifting their wealth —
+        shapes travel behaviour, family exposure and public profile just as much as sector or geography does. Use the wheel to place a
+        client's current age, see which phase they sit in today, and understand roughly when the next phase — and the next shift in
+        K&amp;R exposure — is likely to arrive.
+      </p>
+
+      <div class="lc-layout">
+        <div class="lc-wheel-col">
+          <div class="lc-wheel-wrap" id="lc-wheel-wrap">
+            ${lcWheelSVG()}
+            ${lcQuadLabelsHTML(activeIdx)}
+            <div class="lc-pointer-wrap">
+              <div class="lc-pointer" id="lc-pointer" style="transform:rotate(${state.lifecycle.totalRotation}deg);">
+                <div class="tip"></div>
+                <div class="shaft"></div>
+                <div class="pulse"></div>
+              </div>
+            </div>
+            <div class="lc-center">
+              <div class="age" id="lc-center-age">${age}</div>
+              <div class="lbl">Client Age</div>
+            </div>
+          </div>
+          <div class="lc-age-row">
+            <label class="small" for="lc-age-input">Client age</label>
+            <input id="lc-age-input" class="input" type="number" min="18" max="100" value="${age}">
+            <button class="btn-ghost" id="lc-locate-btn">${icon("rotate-ccw",12)} Locate &amp; Spin</button>
+          </div>
+          <div class="faint" style="font-size:10.5px;text-align:center;max-width:280px;">Click a segment or label to jump the wheel straight to that phase.</div>
+        </div>
+
+        <div id="lc-panels">${lcPanelHTML(age)}${lcCompositionHTML(activeIdx)}</div>
+      </div>
+    </div>
+  `;
+
+  const jumpToStage = (idx)=>{
+    const st = LC_STAGES[idx];
+    const mid = Math.round((st.ageMin + st.ageMax) / 2);
+    lcSpinTo(mid);
+  };
+  content.querySelectorAll(".lc-segment, .lc-quad-label").forEach(el=>{
+    el.addEventListener("click", ()=> jumpToStage(Number(el.dataset.idx)));
+    // Keyboard access: Enter/Space activates the focused segment; the
+    // arrow keys cycle focus (and selection) round the wheel so it's
+    // fully usable without a mouse.
+    el.addEventListener("keydown", (e)=>{
+      const idx = Number(el.dataset.idx);
+      if(e.key==="Enter" || e.key===" "){
+        e.preventDefault();
+        jumpToStage(idx);
+      } else if(["ArrowRight","ArrowDown","ArrowLeft","ArrowUp"].includes(e.key)){
+        e.preventDefault();
+        const dir = (e.key==="ArrowRight"||e.key==="ArrowDown") ? 1 : -1;
+        const nextIdx = (idx + dir + LC_STAGES.length) % LC_STAGES.length;
+        jumpToStage(nextIdx);
+        const selector = el.classList.contains("lc-quad-label") ? ".lc-quad-label" : ".lc-segment";
+        const nextEl = content.querySelector(`${selector}[data-idx="${nextIdx}"]`);
+        if(nextEl) nextEl.focus();
+      }
+    });
+  });
+  document.getElementById("lc-locate-btn").onclick = ()=>{
+    const v = Number(document.getElementById("lc-age-input").value);
+    if(!Number.isNaN(v)) lcSpinTo(v);
+  };
+  document.getElementById("lc-age-input").addEventListener("keydown", (e)=>{
+    if(e.key==="Enter"){ lcSpinTo(Number(e.target.value)); }
+  });
+
+  // Animate into position on first paint of this tab.
+  requestAnimationFrame(()=> requestAnimationFrame(()=> lcSpinTo(state.lifecycle.age) ));
+}
+
+/* ======================================================================
+   EXECUTIVE TAB
+====================================================================== */
+function renderExecutive(){
+  const topSectors = agg.bySector.slice(0,3);
+  content.innerHTML = `
+    <div class="grid grid-kpi">
+      <div class="card"><div class="eyebrow">Policies Analysed</div><div class="kpi-value">100</div></div>
+      <div class="card"><div class="eyebrow">Avg Risk Score</div><div class="kpi-value" style="color:${bandForScore(agg.avgScore).color}">${Math.round(agg.avgScore)}</div></div>
+      <div class="card"><div class="eyebrow">Avg Premium Estimate</div><div class="kpi-value">${fmtGBP(agg.avgPremium)}</div></div>
+      <div class="card"><div class="eyebrow">Avg Incident Cost</div><div class="kpi-value">${fmtGBP(agg.avgIncidentCost)}</div><div class="kpi-sub">${agg.totalClaims} incidents in portfolio</div></div>
+      <div class="card"><div class="eyebrow">Portfolio Loss Ratio</div><div class="kpi-value" style="color:${agg.lossRatio>0.6?T.critical:agg.lossRatio>0.4?T.high:T.low}">${Math.round(agg.lossRatio*100)}%</div><div class="kpi-sub">${fmtGBP(agg.totalPremium)} written</div></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div class="eyebrow" style="margin-bottom:0;">12-Month Portfolio Trend</div>
+        <div class="mode-switch">
+          <button id="exec-trend-loss" class="${state.execTrendMetric==="lossRatio"?"on":""}">Loss Ratio</button>
+          <button id="exec-trend-prem" class="${state.execTrendMetric==="premiumWritten"?"on":""}">Premium Written</button>
+        </div>
+      </div>
+      <p class="muted" style="font-size:12px;margin:6px 0 0;">Illustrative synthetic trend, anchored to this book's current averages — not a projection or actuarial forecast.</p>
+      <div class="chart-box" style="height:200px;margin-top:8px;"><canvas id="chart-trend"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div class="eyebrow" style="margin-bottom:0;">Global Risk Pulse — Live Hotspot Snapshot</div>
+        <button class="btn-ghost" id="exec-map-goto-geo">${icon("globe",12,T.textMuted)} Open full map</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin:6px 0 0;">A quick illustrative read of where sector-linked K&amp;R exposure is currently pinging highest. Full detail, hover notes and the rolling signal log live on the Geographic Exposure tab.</p>
+      <div class="mini-geo-wrap" id="mini-geo-map-wrap">
+        <svg id="mini-geo-svg" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="geo-tooltip" id="mini-geo-tooltip"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="eyebrow">Highest Risk Sectors</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+          ${topSectors.map((s,i)=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="display:flex;align-items:center;gap:8px;font-size:13px;">
+                <span class="mono faint" style="font-size:11px;">0${i+1}</span>${s.sector}
+              </span>
+              <span class="mono" style="font-weight:600;flex-shrink:0;color:${bandForScore(s.avgScore).color}">${s.avgScore}</span>
+            </div>`).join("")}
+        </div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Risk Band Distribution</div>
+        <div class="chart-box" style="height:160px;"><canvas id="chart-band"></canvas></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
+          ${agg.bandCounts.map(d=>`
+            <div class="ministat" style="flex:1;min-width:88px;border-color:${d.color}55;">
+              <div class="lbl" style="color:${d.color};">${d.label}</div>
+              <div class="val">${d.count}<span class="muted" style="font-size:10.5px;font-weight:500;"> &middot; ${Math.round(d.count/portfolio.length*100)}%</span></div>
+            </div>`).join("")}
+        </div>
+        ${(()=>{ const crit = agg.bandCounts.find(d=>d.label==="Critical"); const pct = Math.round(crit.count/portfolio.length*100);
+          return crit.count>0 ? `
+          <div style="margin-top:10px;padding:9px 11px;border-radius:6px;background:rgba(192,71,63,0.10);border:1px solid ${T.critical}55;font-size:11.5px;color:var(--text);display:flex;align-items:flex-start;gap:8px;line-height:1.5;">
+            ${icon("alert-triangle",13,T.critical,"margin-top:2px;flex-shrink:0;")}
+            <span><strong style="color:${T.critical};">${crit.count} polic${crit.count===1?"y":"ies"}</strong> (${pct}% of the book) currently sit in the <strong>Critical</strong> band — flag for renewal review, and consider tightened controls, reduced retention, or additional protective measures.</span>
+          </div>` : `
+          <div style="margin-top:10px;padding:9px 11px;border-radius:6px;background:rgba(76,154,106,0.10);border:1px solid ${T.low}55;font-size:11.5px;color:var(--text);display:flex;align-items:flex-start;gap:8px;line-height:1.5;">
+            ${icon("shield-check",13,T.low,"margin-top:2px;flex-shrink:0;")}
+            <span>No policies currently sit in the <strong>Critical</strong> band across this portfolio.</span>
+          </div>`;
+        })()}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Risk Score vs. Premium</div>
+      <p class="muted" style="font-size:12px;margin:0 0 4px;">Each point is one policy; bubble size reflects incident severity where applicable.</p>
+      <div class="chart-box" style="height:240px;"><canvas id="chart-scatter"></canvas></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="eyebrow">Most Common Control Gaps</div>
+        <div class="chart-box" style="height:210px;"><canvas id="chart-gaps"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Incident Frequency by Sector</div>
+        <div class="chart-box" style="height:210px;"><canvas id="chart-freq"></canvas></div>
+      </div>
+    </div>
+  `;
+
+  chartInstances.trend = new Chart(document.getElementById("chart-trend"), {
+    type:"line",
+    data:{
+      labels: trendData.map(d=>d.month),
+      datasets:[{
+        data: trendData.map(d=> state.execTrendMetric==="lossRatio" ? d.lossRatio*100 : d.premiumWritten),
+        borderColor: T.gold, backgroundColor: "rgba(201,162,75,0.14)", fill:true, tension:0.35,
+        pointRadius:3, pointBackgroundColor: T.goldBright, pointBorderColor: T.goldBright, borderWidth:2,
+      }],
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        x:{ ticks:{color:T.textMuted, font:{size:10.5}}, grid:{display:false} },
+        y:{ ticks:{ color:T.textMuted, font:{size:10.5}, callback:v=> state.execTrendMetric==="lossRatio" ? `${Math.round(v)}%` : fmtGBP(v) }, grid:{color:T.lineSoft} },
+      },
+      plugins:{ legend:{display:false}, tooltip:{
+        backgroundColor:T.bgPanelAlt, borderColor:T.line, borderWidth:1, titleColor:T.text, bodyColor:T.textMuted,
+        callbacks:{ label:(item)=> state.execTrendMetric==="lossRatio" ? `Loss ratio: ${Math.round(item.raw)}%` : `Premium written: ${fmtGBP(item.raw)}` }
+      }},
+    },
+  });
+
+  chartInstances.band = new Chart(document.getElementById("chart-band"), {
+    type:"bar",
+    data:{ labels: agg.bandCounts.map(d=>d.label), datasets:[{ data: agg.bandCounts.map(d=>d.count), backgroundColor: agg.bandCounts.map(d=>d.color), borderRadius:4 }] },
+    options: baseBarOptions({x:{grid:{display:false}}, y:{}}, false, { valueLabels:{ enabled:true, formatter:v=>v } }),
+  });
+
+  chartInstances.scatter = new Chart(document.getElementById("chart-scatter"), {
+    type:"bubble",
+    data:{ datasets:[{
+      data: portfolio.map(c=>({x:c.score, y:c.premium, r: 4 + (c.severity ? Math.min(16, c.severity/150000) : 0), _c:c})),
+      backgroundColor: portfolio.map(c=>bandForScore(c.score).color+"D9"),
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        x:{ min:0, max:100, title:{display:true, text:"Risk Score", color:T.textMuted, font:{size:11}}, ticks:{color:T.textMuted, font:{size:11}}, grid:{color:T.lineSoft} },
+        y:{ ticks:{ color:T.textMuted, font:{size:10}, callback:v=>fmtGBP(v) }, grid:{color:T.lineSoft} },
+      },
+      plugins:{ legend:{display:false}, tooltip:{
+        backgroundColor:T.bgPanelAlt, borderColor:T.line, borderWidth:1, titleColor:T.text, bodyColor:T.textMuted,
+        callbacks:{ title: (items)=>{ const c=items[0].raw._c; return `Policy #${c.id} · ${c.sector}`; },
+          label: (item)=>{ const c=item.raw._c; return [`Score: ${c.score}`, `Premium: ${fmtGBP(c.premium)}`, c.hadClaim ? `Incident cost: ${fmtGBP(c.severity)}` : "No incident on record"]; } }
+      }},
+    },
+  });
+
+  chartInstances.gaps = new Chart(document.getElementById("chart-gaps"), {
+    type:"bar",
+    data:{ labels: agg.vulnCounts.map(d=>d.label), datasets:[{ data: agg.vulnCounts.map(d=>d.count), backgroundColor: T.gold, borderRadius:4 }] },
+    options:{
+      indexAxis:"y", responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ right:26 } },
+      scales:{ x:{ ticks:{color:T.textMuted, font:{size:11}}, grid:{color:T.lineSoft} }, y:{ ticks:{color:T.textMuted, font:{size:10}}, grid:{display:false} } },
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:T.bgPanelAlt, borderColor:T.line, borderWidth:1, titleColor:T.text, bodyColor:T.textMuted },
+        valueLabels:{ enabled:true, formatter:v=>v } },
+    },
+  });
+
+  chartInstances.freq = new Chart(document.getElementById("chart-freq"), {
+    type:"bar",
+    data:{ labels: agg.bySector.map(s=>s.sector), datasets:[{ data: agg.bySector.map(s=>s.freq), backgroundColor: T.high, borderRadius:4 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:20 } },
+      scales:{
+        x:{ ticks:{ color:T.textMuted, font:{size:8}, maxRotation:35, minRotation:35 }, grid:{display:false} },
+        y:{ ticks:{ color:T.textMuted, font:{size:11}, callback:v=>`${Math.round(v*100)}%` }, grid:{color:T.lineSoft} },
+      },
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:T.bgPanelAlt, borderColor:T.line, borderWidth:1, titleColor:T.text, bodyColor:T.textMuted,
+        callbacks:{ label:(item)=>`Incident frequency: ${Math.round(item.raw*100)}%` } },
+        valueLabels:{ enabled:true, formatter:v=>`${Math.round(v*100)}%` } },
+    },
+  });
+
+  initGeoMap("mini-geo-svg", "mini-geo-tooltip", "mini-geo-map-wrap", {compact:true});
+  const gotoBtn = document.getElementById("exec-map-goto-geo");
+  if(gotoBtn) gotoBtn.addEventListener("click", ()=> goToTab("geo"));
+
+  document.getElementById("exec-trend-loss")?.addEventListener("click", ()=>{ state.execTrendMetric="lossRatio"; renderExecutive(); });
+  document.getElementById("exec-trend-prem")?.addEventListener("click", ()=>{ state.execTrendMetric="premiumWritten"; renderExecutive(); });
+}
+
+function baseBarOptions(scaleExtra, _unused, pluginExtra){
+  scaleExtra = scaleExtra || {};
+  return {
+    responsive:true, maintainAspectRatio:false,
+    scales:{
+      x:{ ticks:{color:T.textMuted, font:{size:11}}, grid:{display:false}, ...(scaleExtra.x||{}) },
+      y:{ ticks:{color:T.textMuted, font:{size:11}}, grid:{color:T.lineSoft}, ...(scaleExtra.y||{}) },
+    },
+    plugins:{ legend:{display:false}, tooltip:{ backgroundColor:T.bgPanelAlt, borderColor:T.line, borderWidth:1, titleColor:T.text, bodyColor:T.textMuted }, ...(pluginExtra||{}) },
+  };
+}
+
+/* ======================================================================
+   VALUE-LABELS CHART PLUGIN — draws the numeric value directly on/near
+   each bar so charts read cleanly in a screenshot or slide without a
+   live tooltip. Opt in per-chart via options.plugins.valueLabels.
+====================================================================== */
+Chart.register({
+  id: "valueLabels",
+  afterDatasetsDraw(chart){
+    // NOTE: read from chart.config.options (raw config), not chart.options
+    // (resolved config) — Chart.js treats any function found under
+    // options.plugins.* as a "scriptable option" and auto-invokes it the
+    // moment it's accessed via chart.options, which silently replaces our
+    // formatter function with the return value of calling it once already.
+    const opts = chart.config.options.plugins && chart.config.options.plugins.valueLabels;
+    if(!opts || !opts.enabled) return;
+    const { ctx } = chart;
+    const horizontal = chart.options.indexAxis === "y";
+    chart.data.datasets.forEach((dataset, di)=>{
+      const meta = chart.getDatasetMeta(di);
+      if(meta.hidden) return;
+      meta.data.forEach((el, i)=>{
+        const raw = dataset.data[i];
+        const text = opts.formatter ? String(opts.formatter(raw, i)) : String(raw);
+        ctx.save();
+        ctx.fillStyle = opts.color || T.text;
+        ctx.font = "600 11px " + (opts.font || "system-ui, sans-serif");
+        if(horizontal){
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, el.x + 6, el.y);
+        } else {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(text, el.x, el.y - 4);
+        }
+        ctx.restore();
+      });
+    });
+  },
+});
+
+/* ======================================================================
+   SIMULATOR TAB
+   Perf note: only the initial call per tab-visit does a full innerHTML
+   build. Every slider/toggle/select change after that patches just the
+   handful of DOM nodes whose values actually changed (gauge, premium,
+   retention, benchmark pill, recommendations, exclusions) instead of
+   re-rendering + re-binding the whole tab on every input/drag event.
+====================================================================== */
+function computeSimDerived(sim){
+  const sector = SECTORS[sim.sectorIdx];
+  const band = LIMIT_BANDS[sim.bandIdx];
+  const score = computeScore({ protectionDetail:sim.protectionDetail, crisisResponse:sim.crisisResponse, heat:sim.heat,
+    travelTracking:sim.travelTracking, priorIncidents:sim.priorIncidents, sectorRisk:sector.sectorRisk,
+    travelFrequency:sim.travelFrequency, regionInstability:sim.regionInstability });
+  const premium = computePremium(score, band.mult);
+  const retention = computeRetention(score, band.label);
+  const sectorBenchmark = agg.bySector.find(s=>s.sector===sector.name);
+
+  const recommendations = [];
+  if(!sim.protectionDetail) recommendations.push("Engage a licensed close-protection detail for travel to elevated-risk destinations.");
+  if(!sim.crisisResponse) recommendations.push("Secure a 24/7 crisis response and negotiation retainer with an accredited response consultancy.");
+  if(sim.heat!=="Yes") recommendations.push("Mandate Hostile Environment Awareness Training (HEAT) for all travelling personnel.");
+  if(!sim.travelTracking) recommendations.push("Implement real-time travel tracking with defined check-in and proof-of-life protocols.");
+  if(sim.priorIncidents>0) recommendations.push("Complete a post-incident review and update the crisis management plan following prior incident(s).");
+  if(sim.travelFrequency>=6) recommendations.push("Reduce discretionary travel to high-risk destinations or add pre-deployment risk briefings.");
+  if(sim.regionInstability>=6) recommendations.push("Increase local security liaison and vetted ground support in politically volatile destinations.");
+  if(recommendations.length===0) recommendations.push("Maintain current protocols; schedule routine crisis management plan tabletop exercises.");
+
+  const exclusions = [];
+  if(!sim.crisisResponse) exclusions.push("Response cost coinsurance of 20% pending engagement of an approved crisis response provider.");
+  if(!sim.protectionDetail && sim.priorIncidents>0) exclusions.push("Prior-incident exclusion until an accredited close-protection detail is confirmed for future travel.");
+  if(sim.regionInstability>=8) exclusions.push("Named-country exclusion or war/political violence sub-limit for destinations rated Extreme.");
+  if(exclusions.length===0) exclusions.push("No additional exclusions recommended beyond standard policy wording.");
+
+  return { sector, band, score, premium, retention, sectorBenchmark, recommendations, exclusions };
+}
+
+function simGaugeBlockHTML(d){
+  return `
+    ${riskGaugeSVG(d.score)}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div><div class="faint" style="font-size:10px;text-transform:uppercase;">Estimated Premium</div>
+      <div style="font-size:18px;font-weight:600;font-family:var(--mono);color:${T.goldBright}">${fmtGBP(d.premium)}</div></div>
+      <div><div class="faint" style="font-size:10px;text-transform:uppercase;">Recommended Retention</div>
+      <div style="font-size:18px;font-weight:600;font-family:var(--mono);">${fmtGBP(d.retention)}</div></div>
+      ${d.sectorBenchmark ? `<div><div class="faint" style="font-size:10px;text-transform:uppercase;">vs. ${d.sector.name} Average</div>${deltaPillHTML(d.score, d.sectorBenchmark.avgScoreExact, "down")}</div>` : ""}
+    </div>`;
+}
+
+// Patch just the dynamic bits of the simulator DOM. Called on every
+// slider/toggle/select change instead of re-rendering the whole tab.
+function updateSimulatorDOM(){
+  const sim = state.sim;
+  const d = computeSimDerived(sim);
+
+  const gaugeBlock = document.getElementById("sim-gauge-block");
+  if(gaugeBlock) gaugeBlock.innerHTML = simGaugeBlockHTML(d);
+
+  const recEl = document.getElementById("sim-recommendations");
+  if(recEl) recEl.innerHTML = d.recommendations.map(r=>`<li>${icon("chevron-right",14,T.gold)}${r}</li>`).join("");
+
+  const exclEl = document.getElementById("sim-exclusions");
+  if(exclEl) exclEl.innerHTML = d.exclusions.map(r=>`<li style="color:${T.textMuted}">${icon("alert-triangle",13,T.high,"margin-top:3px;")}${r}</li>`).join("");
+
+  // toggle visuals
+  [["protectionDetail","user-check"],["crisisResponse","phone-call"],["travelTracking","eye"]].forEach(([key,ic])=>{
+    const btn = document.querySelector(`[data-toggle="${key}"]`);
+    if(!btn) return;
+    btn.classList.toggle("on", sim[key]);
+    const label = btn.querySelector(".label");
+    const stateEl = btn.querySelector(".state");
+    if(label) label.querySelector("svg").outerHTML = icon(ic,15, sim[key]?T.gold:T.textFaint);
+    if(stateEl) stateEl.textContent = sim[key] ? "Yes" : "No";
+  });
+
+  const freqVal = document.getElementById("sim-travel-freq-val");
+  if(freqVal) freqVal.textContent = `${sim.travelFrequency}/10`;
+  const instVal = document.getElementById("sim-instability-val");
+  if(instVal) instVal.textContent = `${sim.regionInstability}/10`;
+}
+
+function renderSimulator(){
+  const sim = state.sim;
+  const d = computeSimDerived(sim);
+
+  content.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="eyebrow">Live Risk Assessment</div>
+        <button class="btn-ghost" id="sim-reset">${icon("rotate-ccw",11)} Reset</button>
+      </div>
+      <div id="sim-gauge-block" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-around;gap:12px;margin-top:8px;">
+        ${simGaugeBlockHTML(d)}
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="eyebrow">Engagement Profile</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <div style="grid-column:1/-1;">
+            <label class="small" for="sim-sector">Client Sector</label>
+            <select id="sim-sector">${SECTORS.map((s,i)=>`<option value="${i}" ${i===sim.sectorIdx?"selected":""}>${s.name}</option>`).join("")}</select>
+          </div>
+          <div>
+            <label class="small" for="sim-band">Limit of Indemnity</label>
+            <select id="sim-band">${LIMIT_BANDS.map((b,i)=>`<option value="${i}" ${i===sim.bandIdx?"selected":""}>${b.label}</option>`).join("")}</select>
+          </div>
+          <div>
+            <label class="small" for="sim-incidents">Prior Incidents</label>
+            <select id="sim-incidents">
+              <option value="0" ${sim.priorIncidents===0?"selected":""}>None</option>
+              <option value="1" ${sim.priorIncidents===1?"selected":""}>One</option>
+              <option value="2" ${sim.priorIncidents===2?"selected":""}>Two or more</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow">Protective Measures</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <button class="toggle ${sim.protectionDetail?"on":""}" data-toggle="protectionDetail">
+            <span class="label">${icon("user-check",15, sim.protectionDetail?T.gold:T.textFaint)} Close Protection Detail</span>
+            <span class="state">${sim.protectionDetail?"Yes":"No"}</span>
+          </button>
+          <button class="toggle ${sim.crisisResponse?"on":""}" data-toggle="crisisResponse">
+            <span class="label">${icon("phone-call",15, sim.crisisResponse?T.gold:T.textFaint)} 24/7 Crisis Response Retainer</span>
+            <span class="state">${sim.crisisResponse?"Yes":"No"}</span>
+          </button>
+          <button class="toggle ${sim.travelTracking?"on":""}" data-toggle="travelTracking">
+            <span class="label">${icon("eye",15, sim.travelTracking?T.gold:T.textFaint)} Real-Time Travel Tracking</span>
+            <span class="state">${sim.travelTracking?"Yes":"No"}</span>
+          </button>
+          <div class="minirow">
+            <label for="sim-heat" style="display:flex;align-items:center;gap:8px;">${icon("grad-cap",15,T.textFaint)} HEAT Training</label>
+            <select id="sim-heat" style="width:auto;margin:0;font-size:12px;padding:4px 8px;">
+              <option ${sim.heat==="Yes"?"selected":""}>Yes</option>
+              <option ${sim.heat==="Partial"?"selected":""}>Partial</option>
+              <option ${sim.heat==="No"?"selected":""}>No</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Travel &amp; Regional Exposure</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <label for="sim-travel-freq" style="display:flex;align-items:center;gap:6px;">${icon("plane",13,T.textFaint)} High-Risk Travel Frequency</label>
+            <span class="mono" id="sim-travel-freq-val">${sim.travelFrequency}/10</span>
+          </div>
+          <input id="sim-travel-freq" type="range" min="0" max="10" value="${sim.travelFrequency}">
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <label for="sim-instability" style="display:flex;align-items:center;gap:6px;">${icon("globe",13,T.textFaint)} Regional Political/Security Volatility</label>
+            <span class="mono" id="sim-instability-val">${sim.regionInstability}/10</span>
+          </div>
+          <input id="sim-instability" type="range" min="0" max="10" value="${sim.regionInstability}">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:${T.goldDim}">
+      <div class="eyebrow">Recommendations</div>
+      <ul class="rec-list" id="sim-recommendations">${d.recommendations.map(r=>`<li>${icon("chevron-right",14,T.gold)}${r}</li>`).join("")}</ul>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Suggested Exclusions / Conditions</div>
+      <ul class="rec-list" id="sim-exclusions">${d.exclusions.map(r=>`<li style="color:${T.textMuted}">${icon("alert-triangle",13,T.high,"margin-top:3px;")}${r}</li>`).join("")}</ul>
+    </div>
+  `;
+
+  // Full re-render (rebuilds selects/options too) — used for changes that
+  // alter structural bits like the sector/band dropdown selection.
+  const fullSet = (patch)=>{ Object.assign(state.sim, patch); renderSimulator(); };
+  // Lightweight patch — used for high-frequency inputs (sliders) and simple
+  // toggles where no structural HTML needs to change, only values/classes.
+  const lightSet = (patch)=>{ Object.assign(state.sim, patch); updateSimulatorDOM(); };
+
+  document.getElementById("sim-reset").onclick = ()=>{ state.sim = {...defaultSim}; renderSimulator(); };
+  document.getElementById("sim-sector").onchange = (e)=>fullSet({sectorIdx:Number(e.target.value)});
+  document.getElementById("sim-band").onchange = (e)=>fullSet({bandIdx:Number(e.target.value)});
+  document.getElementById("sim-incidents").onchange = (e)=>fullSet({priorIncidents:Number(e.target.value)});
+  document.getElementById("sim-heat").onchange = (e)=>fullSet({heat:e.target.value});
+
+  // Sliders: patch on every input (cheap now), but throttle to one DOM
+  // update per animation frame so rapid drag events don't pile up.
+  let freqRaf = null;
+  document.getElementById("sim-travel-freq").oninput = (e)=>{
+    state.sim.travelFrequency = Number(e.target.value);
+    if(freqRaf) return;
+    freqRaf = requestAnimationFrame(()=>{ freqRaf = null; updateSimulatorDOM(); });
+  };
+  let instRaf = null;
+  document.getElementById("sim-instability").oninput = (e)=>{
+    state.sim.regionInstability = Number(e.target.value);
+    if(instRaf) return;
+    instRaf = requestAnimationFrame(()=>{ instRaf = null; updateSimulatorDOM(); });
+  };
+
+  content.querySelectorAll("[data-toggle]").forEach(btn=>{
+    btn.onclick = ()=>{ const key = btn.dataset.toggle; lightSet({ [key]: !state.sim[key] }); };
+  });
+}
+
+/* ======================================================================
+   PORTFOLIO EXPLORER TAB
+====================================================================== */
+const PCOLUMNS = [
+  {key:"id", label:"ID"}, {key:"sector", label:"Sector"}, {key:"band", label:"Limit"}, {key:"age", label:"Age"},
+  {key:"score", label:"Score"}, {key:"premium", label:"Premium"}, {key:"hadClaim", label:"Incident"},
+];
+
+function renderPortfolio(){
+  let rows = portfolio;
+  if(state.pSectorFilter!=="All") rows = rows.filter(c=>c.sector===state.pSectorFilter);
+  if(state.pStageFilter!=="All") rows = rows.filter(c=>lcStageForAge(c.age).key===state.pStageFilter);
+  if(state.pQuery.trim()){
+    const q = state.pQuery.trim().toLowerCase();
+    rows = rows.filter(c=>String(c.id).includes(q) || c.sector.toLowerCase().includes(q));
+  }
+  const dir = state.pSortDir==="desc" ? -1 : 1;
+  rows = [...rows].sort((a,b)=>(a[state.pSortKey]>b[state.pSortKey]?1:a[state.pSortKey]<b[state.pSortKey]?-1:0)*dir);
+
+  const selected = portfolio.find(c=>c.id===state.pSelectedId);
+  const selectedBenchmark = selected ? agg.bySector.find(s=>s.sector===selected.sector) : null;
+
+  content.innerHTML = `
+    <div class="card">
+      <div class="eyebrow">Portfolio Explorer</div>
+      <p class="muted" style="font-size:12px;margin:0 0 10px;">Search, filter, and sort all ${portfolio.length} synthetic policies. Select a row for the full profile.</p>
+      <div class="filters">
+        <div class="search-wrap">
+          ${icon("search",13)}
+          <input class="input" id="p-search" placeholder="Search by ID or sector…" value="${state.pQuery.replace(/"/g,'&quot;')}">
+        </div>
+        <select id="p-sector" style="width:auto;margin:0;">
+          <option value="All" ${state.pSectorFilter==="All"?"selected":""}>All Sectors</option>
+          ${SECTORS.map(s=>`<option value="${s.name}" ${state.pSectorFilter===s.name?"selected":""}>${s.name}</option>`).join("")}
+        </select>
+        <select id="p-stage" style="width:auto;margin:0;">
+          <option value="All" ${state.pStageFilter==="All"?"selected":""}>All Lifecycle Stages</option>
+          ${LC_STAGES.map(s=>`<option value="${s.key}" ${state.pStageFilter===s.key?"selected":""}>${s.name} (${s.band})</option>`).join("")}
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            ${PCOLUMNS.map(c=>`<th><button data-sort="${c.key}">${c.label}${state.pSortKey===c.key?icon("arrows-ud",11,T.gold):""}</button></th>`).join("")}
+          </tr></thead>
+          <tbody>
+            ${rows.map(c=>`
+              <tr data-id="${c.id}" class="${c.id===state.pSelectedId?"selected":""}">
+                <td class="mono faint">#${c.id}</td>
+                <td style="white-space:nowrap;">${c.sector}</td>
+                <td class="muted" style="white-space:nowrap;">${c.band}</td>
+                <td class="mono muted">${c.age}</td>
+                <td class="mono" style="font-weight:600;color:${bandForScore(c.score).color}">${c.score}</td>
+                <td class="mono" style="white-space:nowrap;">${fmtGBP(c.premium)}</td>
+                <td>${c.hadClaim ? `<span style="color:${T.critical}">Yes</span>` : `<span class="faint">—</span>`}</td>
+              </tr>`).join("")}
+            ${rows.length===0 ? `<tr><td colspan="7" class="faint" style="text-align:center;padding:16px;">No policies match this search.</td></tr>` : ""}
+          </tbody>
+        </table>
+      </div>
+      <div class="faint" style="font-size:11px;margin-top:8px;">${rows.length} of ${portfolio.length} policies shown</div>
+    </div>
+
+    ${selected ? `
+    <div class="card" style="border-color:${T.goldDim}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="eyebrow">Policy #${selected.id} · ${selected.sector}</div>
+        <button id="p-close" class="faint" style="background:none;border:none;">${icon("x",16)}</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;">
+        ${riskGaugeSVG(selected.score)}
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+          <div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:90px;">Premium</span><span class="mono">${fmtGBP(selected.premium)}</span>${selectedBenchmark?deltaPillHTML(selected.premium, selectedBenchmark.avgPremium, "down"):""}</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:90px;">Score</span><span class="mono">${selected.score}</span>${selectedBenchmark?deltaPillHTML(selected.score, selectedBenchmark.avgScoreExact, "down"):""}</div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:90px;">Incident History</span><span>${selected.hadClaim ? `${fmtGBP(selected.severity)} incurred` : "No incidents"}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="min-width:90px;">Age &middot; Stage</span><span>${selected.age} &middot; <span style="color:${lcStageForAge(selected.age).color};">${lcStageForAge(selected.age).name}</span></span></div>
+        </div>
+      </div>
+      <div class="grid grid-6" style="margin-top:10px;">
+        ${miniStat("Protection Detail", selected.protectionDetail)}
+        ${miniStat("Crisis Response", selected.crisisResponse)}
+        ${miniStat("Travel Tracking", selected.travelTracking)}
+        ${miniStat("HEAT Training", selected.heat==="Yes", selected.heat==="Partial"?"Partial":undefined)}
+        ${miniStat("Travel Frequency", null, `${selected.travelFrequency}/10`)}
+        ${miniStat("Region Volatility", null, `${selected.regionInstability}/10`)}
+      </div>
+    </div>` : ""}
+  `;
+
+  // Debounce search input so we don't re-render+re-sort+re-filter the
+  // whole table on every keystroke; a short delay is imperceptible to
+  // typing but avoids wasted work while the user is still typing.
+  let searchDebounce = null;
+  const searchInput = document.getElementById("p-search");
+  searchInput.oninput = (e)=>{
+    const val = e.target.value;
+    state.pQuery = val;
+    if(searchDebounce) clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(()=>{
+      renderPortfolio();
+      const el = document.getElementById("p-search");
+      if(el){ el.focus(); el.setSelectionRange(val.length, val.length); }
+    }, 150);
+  };
+  document.getElementById("p-sector").onchange = (e)=>{ state.pSectorFilter = e.target.value; renderPortfolio(); };
+  document.getElementById("p-stage").onchange = (e)=>{ state.pStageFilter = e.target.value; renderPortfolio(); };
+  content.querySelectorAll("[data-sort]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const key = btn.dataset.sort;
+      if(key===state.pSortKey) state.pSortDir = state.pSortDir==="desc"?"asc":"desc";
+      else { state.pSortKey = key; state.pSortDir = "desc"; }
+      renderPortfolio();
+    };
+  });
+  content.querySelectorAll("tbody tr[data-id]").forEach(tr=>{
+    tr.onclick = ()=>{ const id = Number(tr.dataset.id); state.pSelectedId = state.pSelectedId===id ? null : id; renderPortfolio(); };
+  });
+  const closeBtn = document.getElementById("p-close");
+  if(closeBtn) closeBtn.onclick = ()=>{ state.pSelectedId = null; renderPortfolio(); };
+}
+
+function miniStat(label, ok, value){
+  const color = value!==undefined && value!==null ? T.text : ok ? T.low : T.critical;
+  const display = value!==undefined && value!==null ? value : (ok?"Yes":"No");
+  return `<div class="ministat"><div class="lbl">${label}</div><div class="val" style="color:${color}">${display}</div></div>`;
+}
+
+/* ======================================================================
+   HEATMAP TAB
+====================================================================== */
+function renderHeatmap(){
+  const bySector = agg.bySector;
+  const metrics = [
+    { key:"avgScore", label:"Avg Risk Score", fmt:v=>Math.round(v), min:0, max:100 },
+    { key:"freq", label:"Incident Frequency", fmt:v=>`${Math.round(v*100)}%`, min:0, max:Math.max(...bySector.map(s=>s.freq),0.01) },
+    { key:"sev", label:"Avg Incident Severity", fmt:v=>v?fmtGBP(v):"—", min:0, max:Math.max(...bySector.map(s=>s.sev),1) },
+    { key:"avgPremium", label:"Avg Premium", fmt:v=>fmtGBP(v), min:0, max:Math.max(...bySector.map(s=>s.avgPremium),1) },
+    { key:"incidentProb", label:"Base Incident Probability", fmt:v=>`${Math.round(v*1000)/10}%`, min:0, max:Math.max(...bySector.map(s=>s.incidentProb),0.001) },
+  ];
+
+  content.innerHTML = `
+    <div class="card">
+      <div class="eyebrow">Sector Exposure Heat Map</div>
+      <p class="muted" style="font-size:12px;margin:0 0 8px;">Darker red indicates greater exposure relative to the portfolio.</p>
+      <div class="table-wrap">
+        <table class="heat-table">
+          <thead><tr>
+            <th style="color:${T.textFaint};font-weight:500;">Sector</th>
+            ${metrics.map(m=>`<th style="color:${T.textFaint};font-weight:500;min-width:74px;">${m.label}</th>`).join("")}
+          </tr></thead>
+          <tbody>
+            ${bySector.map(s=>`
+              <tr>
+                <td style="text-align:left;white-space:nowrap;color:${T.text};font-family:inherit;font-weight:400;">${s.sector}</td>
+                ${metrics.map(m=>`<td style="background:${heatColor(s[m.key],m.min,m.max)}">${m.fmt(s[m.key])}</td>`).join("")}
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Sector Snapshot</div>
+      <div class="grid grid-2" style="margin-top:4px;">
+        ${bySector.map(s=>`
+          <div class="minirow">
+            <span style="display:flex;align-items:center;gap:8px;">${icon("building",14,T.textFaint)}${s.sector}</span>
+            <span class="muted" style="font-size:12px;">${s.count} policies</span>
+            <span class="mono" style="font-weight:600;color:${bandForScore(s.avgScore).color}">${s.avgScore}</span>
+          </div>`).join("")}
+      </div>
+    </div>
+  `;
+}
+
+/* ======================================================================
+   THREAT EXPOSURE TAB
+====================================================================== */
+function renderThreat(){
+  const rows = SECTORS.map(s=>{
+    const level = s.incidentProb>=0.03 ? "High" : s.incidentProb>=0.015 ? "Moderate" : "Low";
+    return {...s, level};
+  }).sort((a,b)=>b.incidentProb-a.incidentProb);
+
+  content.innerHTML = `
+    <div class="card">
+      <div class="eyebrow">Kidnap &amp; Extortion Threat Analysis</div>
+      <p class="muted" style="font-size:12px;margin:0;">Estimated annual probability, ransom/response cost, and captivity duration by client sector.</p>
+    </div>
+    <div class="grid grid-2">
+      ${rows.map(s=>`
+        <div class="card threat-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
+            <span style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;font-family:var(--display);">${icon("skull",15,T.textFaint)}${s.name}</span>
+            ${trafficLightHTML(s.level)}
+          </div>
+          <div class="grid grid-3">
+            <div>
+              <div class="stat-label">${icon("trend-up",11)} Probability</div>
+              <div class="stat-value">${(s.incidentProb*100).toFixed(1)}%</div>
+            </div>
+            <div>
+              <div class="stat-label">${icon("dollar",11)} Ransom / Response</div>
+              <div class="stat-value">${fmtGBP(s.avgRansomBase)}</div>
+            </div>
+            <div>
+              <div class="stat-label">${icon("clock",11)} Captivity</div>
+              <div class="stat-value">${s.avgCaptivityDays}d</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;color:${T.textFaint};">
+              <span>Travel Exposure</span><span class="mono">${s.travelExposure}/10</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${s.travelExposure*10}%;"></div></div>
+          </div>
+        </div>`).join("")}
+    </div>
+  `;
+}
+
+/* ======================================================================
+   GEOGRAPHIC EXPOSURE TAB
+   Illustrative, continuously-animated threat map — plots synthetic
+   hotspot markers (tied to the sectors modelled above) on a stylised
+   world outline. This is NOT a live news/wire feed: a genuine real-time
+   feed would require a backend and a licensed intelligence data source,
+   which is out of scope for a single offline HTML file. The map itself
+   is drawn from a small set of hand-simplified coastline points using a
+   basic equirectangular projection — deliberately self-contained, with
+   no runtime fetch of external map data, so it renders identically
+   offline, in a sandboxed preview, or in any browser. The animated
+   "signal log" below is generated client-side from the same synthetic
+   dataset purely for visual texture.
+====================================================================== */
+let geoLogInterval = null;
+
+// Simplified [lon,lat] outlines — stylised, not survey-accurate coastlines.
+const GEO_LANDMASSES = [
+  // North America
+  [[-168,66],[-155,71],[-120,74],[-95,73],[-80,68],[-65,60],[-55,52],[-60,46],[-67,45],[-70,42],[-75,35],[-81,25],[-97,19],[-90,14],[-83,9],[-79,8],[-83,15],[-97,26],[-113,31],[-117,33],[-124,40],[-124,49],[-130,55],[-141,60],[-156,59],[-166,54],[-168,60],[-168,66]],
+  // South America
+  [[-80,10],[-77,4],[-79,-4],[-71,-18],[-70,-30],[-72,-40],[-68,-52],[-65,-55],[-58,-52],[-53,-35],[-48,-25],[-35,-8],[-45,0],[-51,4],[-60,8],[-70,12],[-80,10]],
+  // Africa
+  [[-17,15],[-10,7],[8,4],[9,-3],[13,-6],[13,-17],[18,-23],[18,-30],[25,-34],[32,-30],[35,-22],[40,-15],[42,-5],[51,10],[48,12],[43,12],[43,15],[38,18],[34,27],[25,31],[10,37],[0,35],[-6,35],[-9,30],[-17,21],[-17,15]],
+  // Europe
+  [[-9,43],[-5,36],[3,42],[10,44],[13,45],[18,40],[23,36],[27,40],[30,45],[27,53],[30,60],[24,66],[20,69],[10,63],[5,58],[-2,52],[-5,49],[-9,43]],
+  // Asia (incl. Middle East, Siberia, East Asia)
+  [[27,40],[30,46],[40,45],[48,40],[55,38],[60,40],[70,42],[75,38],[80,35],[80,28],[88,26],[92,22],[100,20],[104,10],[108,10],[110,20],[120,25],[122,32],[130,35],[141,45],[135,52],[120,53],[105,52],[90,50],[80,52],[70,58],[60,62],[50,62],[45,66],[40,68],[30,68],[27,60],[27,40]],
+  // Australia
+  [[113,-22],[115,-33],[120,-34],[130,-32],[137,-35],[145,-38],[150,-37],[153,-28],[150,-22],[145,-17],[142,-11],[135,-12],[130,-12],[125,-15],[113,-22]],
+  // Madagascar
+  [[43,-12],[47,-16],[47,-25],[44,-25],[43,-16],[43,-12]],
+  // Great Britain / Ireland
+  [[-5,50],[-3,58],[-6,58],[-8,52],[-5,50]],
+  // Japan
+  [[130,32],[141,35],[141,42],[142,45],[131,34],[130,32]],
+  // Philippines / Sulu / Maritime SE Asia
+  [[120,19],[122,14],[124,7],[126,8],[122,17],[120,19]],
+  // Indonesia (Sumatra–Java–Borneo cluster, stylised)
+  [[95,5],[106,-6],[114,-4],[117,4],[108,2],[98,3],[95,5]],
+  // New Zealand
+  [[173,-41],[178,-38],[175,-34],[171,-42],[173,-41]],
+  // Greenland
+  [[-45,60],[-20,70],[-40,83],[-55,70],[-45,60]],
+];
+
+function projectPoint(lon, lat, width, height){
+  const x = (lon + 180) / 360 * width;
+  const y = (90 - lat) / 180 * height;
+  return [x, y];
+}
+
+function landmassPathD(points, width, height){
+  return points.map((p, i)=>{
+    const [x, y] = projectPoint(p[0], p[1], width, height);
+    return (i===0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1);
+  }).join(" ") + " Z";
+}
+
+function renderGeo(){
+  content.innerHTML = `
+    <div class="card">
+      <div class="eyebrow">Geographic Exposure — Illustrative Threat Map</div>
+      <p class="muted" style="font-size:12px;margin:0 0 6px;">
+        Synthetic hotspot markers plotted against the client sectors modelled in this dashboard, sized and
+        coloured by illustrative exposure intensity, on a stylised world outline. This is a continuously-animated
+        illustrative visualisation consistent with the rest of the synthetic dataset — <strong style="color:${T.text};">not
+        a live news or intelligence wire</strong>. A genuine real-time feed would require a backend service and a
+        licensed data source, which is outside the scope of this self-contained file (the map itself also draws
+        with no runtime network calls, so it renders the same online or offline).
+      </p>
+      <div class="geo-legend" id="geo-legend"></div>
+      <div class="geo-map-wrap" id="geo-map-wrap">
+        <svg id="geo-svg" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="geo-tooltip" id="geo-tooltip"></div>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="eyebrow">Hotspots by Sector</div>
+        <div id="geo-hotspot-list" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;max-height:280px;overflow-y:auto;"></div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Illustrative Signal Log</div>
+        <p class="faint" style="font-size:11px;margin:0 0 6px;">Synthetic, looping log generated in-browser — for visual texture only, not real reporting.</p>
+        <div id="geo-feed" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  `;
+
+  const legend = document.getElementById("geo-legend");
+  legend.innerHTML = ["Low","Moderate","High","Critical"].map(l=>{
+    const c = {Low:T.low, Moderate:T.moderate, High:T.high, Critical:T.critical}[l];
+    return `<span class="geo-legend-item"><span class="geo-dot" style="background:${c}"></span>${l} exposure</span>`;
+  }).join("");
+
+  const listEl = document.getElementById("geo-hotspot-list");
+  listEl.innerHTML = GEO_HOTSPOTS.map(h=>{
+    const band = bandForScore(geoIntensity(h.sector));
+    return `<div class="minirow">
+      <span style="display:flex;align-items:center;gap:8px;">${icon("globe",13,T.textFaint)}${h.name}<span class="faint" style="font-size:11px;">— ${h.sector}</span></span>
+      <span class="mono" style="font-weight:600;flex-shrink:0;color:${band.color}">${band.label}</span>
+    </div>`;
+  }).join("");
+
+  initGeoMap();
+  startGeoFeed();
+}
+
+function initGeoMap(svgId="geo-svg", tooltipId="geo-tooltip", wrapId="geo-map-wrap", opts={}){
+  const svgEl = document.getElementById(svgId);
+  if(!svgEl) return;
+  const width = 960, height = 500;
+  const NS = "http://www.w3.org/2000/svg";
+  const compact = !!opts.compact;
+
+  while(svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+  // graticule (lightweight, every 30deg)
+  const gratG = document.createElementNS(NS, "g");
+  for(let lon=-180; lon<=180; lon+=30){
+    const [x1] = projectPoint(lon, 90, width, height);
+    const line = document.createElementNS(NS, "line");
+    line.setAttribute("x1", x1); line.setAttribute("y1", 0);
+    line.setAttribute("x2", x1); line.setAttribute("y2", height);
+    line.setAttribute("stroke", T.lineSoft); line.setAttribute("stroke-width", 0.4); line.setAttribute("opacity", 0.35);
+    gratG.appendChild(line);
+  }
+  for(let lat=-60; lat<=60; lat+=30){
+    const [,y1] = projectPoint(0, lat, width, height);
+    const line = document.createElementNS(NS, "line");
+    line.setAttribute("x1", 0); line.setAttribute("y1", y1);
+    line.setAttribute("x2", width); line.setAttribute("y2", y1);
+    line.setAttribute("stroke", T.lineSoft); line.setAttribute("stroke-width", 0.4); line.setAttribute("opacity", 0.35);
+    gratG.appendChild(line);
+  }
+  svgEl.appendChild(gratG);
+
+  // landmasses
+  const landG = document.createElementNS(NS, "g");
+  GEO_LANDMASSES.forEach(points=>{
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("d", landmassPathD(points, width, height));
+    path.setAttribute("fill", T.bgPanelAlt);
+    path.setAttribute("stroke", T.line);
+    path.setAttribute("stroke-width", 0.8);
+    path.setAttribute("stroke-linejoin", "round");
+    landG.appendChild(path);
+  });
+  svgEl.appendChild(landG);
+
+  // hotspot markers
+  const markerG = document.createElementNS(NS, "g");
+  const tooltip = document.getElementById(tooltipId);
+  const wrap = document.getElementById(wrapId);
+
+  GEO_HOTSPOTS.forEach((h, i)=>{
+    const [x, y] = projectPoint(h.lon, h.lat, width, height);
+    const inten = geoIntensity(h.sector);
+    const band = bandForScore(inten);
+    const r = (compact ? 2.2 : 3) + (inten/100)*(compact ? 3.5 : 5);
+
+    const ring = document.createElementNS(NS, "circle");
+    ring.setAttribute("cx", x); ring.setAttribute("cy", y); ring.setAttribute("r", r);
+    ring.setAttribute("fill", "none"); ring.setAttribute("stroke", band.color); ring.setAttribute("stroke-width", 1.4);
+    ring.setAttribute("class", "geo-pulse-ring");
+    ring.style.animationDelay = (i*0.3) + "s";
+    markerG.appendChild(ring);
+
+    const dot = document.createElementNS(NS, "circle");
+    dot.setAttribute("cx", x); dot.setAttribute("cy", y); dot.setAttribute("r", r*0.55);
+    dot.setAttribute("fill", band.color); dot.setAttribute("stroke", T.bg); dot.setAttribute("stroke-width", 0.8);
+    dot.setAttribute("class", "geo-marker-dot");
+    dot.style.animationDelay = (i*0.3) + "s";
+    if(tooltip && wrap){
+      dot.style.cursor = "pointer";
+      dot.addEventListener("mouseenter", ()=>{
+        tooltip.style.opacity = 1;
+        tooltip.innerHTML = `<strong>${h.name}</strong><br><span style="color:${T.textMuted}">${h.sector}</span><br>${h.note}<br><span style="color:${band.color};font-weight:600;">${band.label} exposure</span>`;
+      });
+      dot.addEventListener("mousemove", (event)=>{
+        const rect = wrap.getBoundingClientRect();
+        tooltip.style.left = Math.min(rect.width - 230, event.clientX - rect.left + 14) + "px";
+        tooltip.style.top = (event.clientY - rect.top + 10) + "px";
+      });
+      dot.addEventListener("mouseleave", ()=>{ tooltip.style.opacity = 0; });
+    }
+    markerG.appendChild(dot);
+  });
+  svgEl.appendChild(markerG);
+}
+
+function startGeoFeed(){
+  if(geoLogInterval) clearInterval(geoLogInterval);
+  const feedEl = document.getElementById("geo-feed");
+  const verbs = [
+    "Elevated chatter noted near", "Advisory review flagged", "Pattern-of-life shift observed near",
+    "Local reporting referenced activity near", "Routine monitoring update for", "Travel advisory level unchanged for",
+    "Security posture reassessed for",
+  ];
+  let tSec = 0;
+  function pushEntry(){
+    const el = document.getElementById("geo-feed");
+    if(!el){ clearInterval(geoLogInterval); geoLogInterval = null; return; }
+    const h = GEO_HOTSPOTS[Math.floor(Math.random()*GEO_HOTSPOTS.length)];
+    const band = bandForScore(geoIntensity(h.sector));
+    const verb = verbs[Math.floor(Math.random()*verbs.length)];
+    tSec += Math.floor(Math.random()*40) + 10;
+    const row = document.createElement("div");
+    row.className = "minirow geo-feed-row";
+    row.style.fontSize = "11px";
+    row.innerHTML = `<span style="display:flex;align-items:center;gap:6px;">
+        <span class="geo-dot" style="background:${band.color}"></span>
+        ${verb} <strong style="margin:0 3px;color:${T.text};">${h.name}</strong>
+        <span class="faint">(${h.sector})</span>
+      </span>
+      <span class="mono faint" style="flex-shrink:0;">T-${tSec}s</span>`;
+    el.prepend(row);
+    while(el.children.length > 12) el.removeChild(el.lastChild);
+  }
+  pushEntry();
+  geoLogInterval = setInterval(pushEntry, 2600);
+}
+
+/* ======================================================================
+   AI RISK ADVISOR — fully offline / no external API
+   A rule-based conversational agent: written knowledge + this
+   dashboard's own real scoring engine (SECTORS, computeScore,
+   computePremium, computeRetention) power its answers. No network
+   call, no API key, no live data feed — everything runs in this file.
+   Chat history lives in `state.chat.messages` for the life of the
+   page only (resets on refresh — there's no database).
+====================================================================== */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+}
+
+// Very small markdown-lite renderer: **bold**, "- " bullet lists, paragraphs.
+function mdLite(raw){
+  const escaped = escapeHtml(raw).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const blocks = escaped.split(/\n\s*\n/);
+  return blocks.map(block=>{
+    const lines = block.split("\n").map(l=>l.trim()).filter(Boolean);
+    if(lines.length && lines.every(l=>/^[-•]\s+/.test(l))){
+      return `<ul>${lines.map(l=>`<li>${l.replace(/^[-•]\s+/, "")}</li>`).join("")}</ul>`;
+    }
+    return `<p>${lines.join("<br>")}</p>`;
+  }).join("");
+}
+
+// ---- sector name aliases, used both for topic matching and the scenario calculator ----
+const SECTOR_ALIASES = {
+  "Extractive – Oil, Gas & Mining": ["oil","gas","mining","extractive","drilling","rig","mine"],
+  "NGO & Humanitarian": ["ngo","humanitarian","aid work","charity","relief"],
+  "Maritime & Shipping": ["maritime","shipping","vessel","crew","piracy","tanker","seafarer"],
+  "Journalism & Media": ["journalis","media","reporter","press","news crew","correspondent"],
+  "Diplomatic & Government Contractors": ["diplomat","embassy","government contractor","consular","foreign service"],
+  "Engineering & Field Infrastructure": ["engineering","infrastructure","construction","field site","field team"],
+  "Financial Services (Exec Travel)": ["financial","banking","bank","executive travel","exec travel","finance"],
+  "Technology & Telecoms (Emerging Mkts)": ["tech company","technology","telecom","telco","software"],
+};
+function findSectorInText(q){
+  for(const [name, aliases] of Object.entries(SECTOR_ALIASES)){
+    if(aliases.some(a=>q.includes(a))) return name;
+  }
+  return null;
+}
+
+// ---- geographic hotspot "why" reasoning, category-level (not fabricated specific incidents) ----
+const HOTSPOT_DRIVER = {
+  "Niger Delta": "a resource-extraction criminal economy where kidnap-for-ransom has become an established revenue stream alongside oil-bunkering",
+  "Eastern DRC": "active armed-group conflict fighting for control of mineral-rich territory",
+  "Maracaibo Basin": "acute economic collapse feeding opportunistic criminal extortion networks",
+  "Juba": "a fragile post-conflict state with thin security institutions",
+  "Sahel Corridor": "cross-border jihadist insurgency that increasingly uses kidnap-for-ransom to fund itself",
+  "Sana'a": "an active civil war with fragmented, contested territorial control",
+  "Mogadishu": "a protracted insurgency operating alongside a weak central state",
+  "Gulf of Guinea": "a maritime piracy chokepoint with limited naval interdiction capacity",
+  "Gulf of Aden": "a maritime chokepoint historically exploited by armed non-state actors",
+  "Sulu Sea": "archipelagic geography that has long enabled maritime kidnap gangs to operate with relative freedom of movement",
+  "Culiacán": "cartel-controlled territory where violence tracks organised-crime rivalries",
+  "Idlib": "an active conflict frontline",
+  "Kabul": "post-transition instability with residual insurgent activity",
+  "Baghdad": "residual insurgent and militia activity that has historically targeted foreign personnel",
+  "Tripoli": "fragmented rival-government control and militia rule",
+  "Kandahar": "an insurgent stronghold with limited state security presence",
+  "Ouagadougou": "regional Sahelian insurgent spillover",
+  "Katanga": "remote, under-governed mining territory with minimal security infrastructure",
+  "PNG Highlands": "tribal conflict dynamics combined with limited state policing reach",
+  "Mexico City": "a high-volume urban express-kidnapping criminal economy",
+  "Johannesburg": "an elevated urban violent-crime rate",
+  "Caracas": "economic crisis conditions that tend to drive up opportunistic extortion crime",
+  "Lagos": "rapid urbanisation outpacing security infrastructure investment",
+  "Mindanao": "localised separatist and criminal armed conflict",
+  "Karachi": "dense urban crime layered with periodic targeted violence against foreign nationals",
+};
+function findHotspotInText(q){
+  return GEO_HOTSPOTS.find(h=>q.includes(h.name.toLowerCase().split(",")[0].split("(")[0].trim()));
+}
+
+function newsSearchLink(query){
+  return `https://news.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
+// ---- knowledge topics: hand-written K&R domain content, technical + simple variants ----
+const KB_TOPICS = [
+  {
+    id:"what-is-kr",
+    keywords:["what is k&r","what is kidnap and ransom","kidnap and ransom insurance","kr insurance","explain k&r","k&r cover","what does k&r cover"],
+    technical:"K&R (Kidnap & Ransom) insurance — sometimes sold under \"Special Risks\" or \"Crisis Management\" wordings — indemnifies a policyholder for ransom and associated crisis-response costs following kidnap, extortion, hijack, wrongful detention or (in broader forms) political evacuation. The commercial core isn't really the ransom payment itself; it's the **response consultancy** — most reputable markets bundle in a crisis-response firm on retainer, because a well-run negotiation reduces both the payout and the captivity duration, which is where the real severity sits. Typical heads of cover: ransom/extortion monies, loss of ransom in transit, personal accident, judicial and legal costs, PR/crisis-communications costs, and sometimes salary continuation. Cover is almost always **non-disclosed** to employees — knowing you're covered can itself increase target risk, which is a genuinely unusual feature of this line.",
+    simple:"Think of K&R insurance as two things bundled together: (1) money to help pay a ransom or crisis costs if someone's kidnapped or extorted, and (2) — more importantly in practice — access to a professional crisis-response team who actually run the negotiation. The insurance side rarely gets used without that response team, because a good negotiation usually gets the ransom down and gets the person home faster, which matters more than the payout itself. One quirky feature of this insurance: staff usually aren't told they're covered, since knowing about it can make you a bigger target.",
+  },
+  {
+    id:"emerging-risk",
+    keywords:["emerging risk","where do you see risk","future risk","risk trend","what's changing","biggest risk right now","new risk","current risk"],
+    technical:"My honest, opinion-flagged read on where this line is moving: **(1) Express and virtual kidnapping** — short-duration, phone-mediated extortion (real or entirely fabricated) is displacing some traditional captivity-style K&R, especially against Latin American and Gulf-state-linked families, because it's lower-risk and faster-turnaround for the criminal actor. **(2) Insurgency-financed kidnap** in the Sahel and parts of the Horn of Africa, where kidnap-for-ransom has become a deliberate funding line for armed groups rather than opportunistic crime — that changes negotiation dynamics considerably. **(3) Maritime risk resurgence**, particularly Gulf of Guinea piracy cycling with economic conditions onshore, plus adjacent (not strictly K&R, but often co-underwritten) vessel-seizure risk in Red Sea-adjacent waters. **(4) Shrinking humanitarian access** raising NGO/media exposure in contested territories as security guarantees from local actors erode. **(5) A quieter one people underprice: complacency risk** — the mid-frequency corporate traveller who doesn't fit the classic \"high-risk sector\" profile but travels just often enough, to just borderline-enough locations, to be statistically exposed without any of the protective controls a higher-risk client would have as standard.",
+    simple:"If you ask me where I'd put my attention right now: quick phone-based extortion scams (sometimes with no real kidnapping at all) are becoming more common than the classic long-captivity case. Armed groups in parts of West Africa are using kidnapping on purpose to raise money, not just as opportunistic crime — that's a real shift. Piracy is creeping back up around West Africa's coastline. Aid workers and journalists are more exposed as it gets harder to guarantee safe access in conflict areas. And the risk I think gets underpriced the most: the everyday business traveller who goes to somewhat-risky places just often enough to be exposed, but doesn't get any of the security training or protection a 'high risk sector' client would automatically get.",
+  },
+  {
+    id:"misconceptions",
+    keywords:["misconception","myth","common mistake","people get wrong","misunderstand"],
+    technical:"The misconception I'd correct first: that K&R pricing is mainly about the size of the potential ransom. It isn't — **frequency and captivity duration drive severity far more** than the headline ransom figure, because response costs, salary continuation, legal costs and reputational fallout accrue for every day the case runs. Second misconception: that avoiding \"obviously dangerous\" countries removes the exposure. Express kidnapping and extortion cluster heavily in relatively stable middle-income cities, not just conflict zones. Third: that having a response-consultant retainer is a formality — in a live case it is usually the single biggest lever on outcome quality.",
+    simple:"Biggest myth: people assume the ransom amount is what really drives cost. It's actually how long the case drags on that matters most — every extra day means more response-team costs, more legal costs, more salary continuation, more reputational risk. Second myth: only 'dangerous' countries carry risk — a lot of express-kidnapping and phone-scam extortion actually happens in fairly stable, ordinary-feeling cities. Third: the crisis-response team on the policy sounds like a nice-to-have — in a real case, it's usually the single thing that most improves the outcome.",
+  },
+  {
+    id:"exec-tab",
+    keywords:["executive dashboard","executive tab","kpi tab","main page","overview tab"],
+    technical:"The **Executive Dashboard** rolls the whole synthetic book up to portfolio level: policies analysed, average risk score, average premium estimate, average incident cost, and portfolio loss ratio, alongside the highest-risk sectors, the risk-band distribution, a risk-score-vs-premium scatter, the most common control gaps across the book, incident frequency by sector, and a compact \"Global Risk Pulse\" map snapshot. It's the tab for a portfolio-level sanity check, not individual-risk pricing.",
+    simple:"The Executive Dashboard is the bird's-eye view — it adds up the whole (synthetic, illustrative) book of 100 policies into averages: average risk score, average premium, average claim cost, and how much of the premium is being eaten by claims (loss ratio). It also shows which sectors look riskiest and a small world map preview. It's for a 'how's the book looking overall' check, not for pricing one specific client.",
+  },
+  {
+    id:"advisor-tab",
+    keywords:["ai risk advisor tab","advisor tab","this chat","what are you","who are you"],
+    technical:"You're looking at it — I'm the **AI Risk Advisor** tab. I explain the other tabs, discuss K&R risk broadly, give my own read on emerging risk, and can run a rough score/premium calculation from a plain-English scenario using this dashboard's own scoring engine. I don't call any external service — everything I say comes from knowledge written into this page plus real, deterministic maths already in this dashboard's code, so there's no ongoing cost and nothing to configure.",
+    simple:"That's me! I explain the other tabs, talk through K&R risk in general, give my own take on where risk seems to be building, and can do a rough premium/score estimate if you describe a scenario. I don't connect to the internet or any AI service — everything I know is written directly into this page, and the numbers I calculate use the same maths as the Simulator tab.",
+  },
+  {
+    id:"simulator-tab",
+    keywords:["simulator tab","underwriting simulator","how does the simulator work","scoring engine","how is score calculated","how is premium calculated","simulator scores a risk","simulator score","how the simulator scores","walk me through the simulator","how is a risk scored"],
+    technical:`The **Underwriting Simulator** is the single-risk pricing tool. You pick a client sector and a limit band, then toggle eight rating factors: protection detail, crisis-response retainer, HEAT training, travel tracking, prior incidents, sector risk, travel frequency, and regional instability. computeScore() blends those into a weighted 0-100 score — protection detail ${Math.round(WEIGHTS.protectionDetail*100)}%, crisis response ${Math.round(WEIGHTS.crisisResponse*100)}%, HEAT ${Math.round(WEIGHTS.heat*100)}%, travel tracking ${Math.round(WEIGHTS.travelTracking*100)}%, prior incidents ${Math.round(WEIGHTS.priorIncidents*100)}%, sector risk ${Math.round(WEIGHTS.sectorRisk*100)}%, travel frequency ${Math.round(WEIGHTS.travelFrequency*100)}%, region instability ${Math.round(WEIGHTS.regionInstability*100)}%. Bands: Low 0-30, Moderate 31-60, High 61-80, Critical 81-100. Premium = band multiplier × (2200 + 320 × score); retention = band base amount × a band-risk multiplier (Low ×1, Moderate ×1.5, High ×2.5, Critical ×4).`,
+    simple:"The Simulator lets you pick a client's sector and cover limit, then flip switches for things like whether they have close protection, crisis-response cover, hostile-environment training, travel tracking, and past incidents. It adds those up (with some factors weighted more than others) into a 0-100 risk score, which then decides a rough premium and how much the client should retain themselves before cover kicks in.",
+  },
+  {
+    id:"portfolio-tab",
+    keywords:["portfolio explorer","portfolio tab","policy list","browse policies"],
+    technical:"The **Portfolio Explorer** is a searchable, sortable, filterable table over the full synthetic 100-policy book, letting you drill into any individual risk's inputs and computed outputs side by side.",
+    simple:"The Portfolio Explorer is just a searchable table of all 100 example policies, so you can look up any one of them and see exactly what went into its score and premium.",
+  },
+  {
+    id:"heatmap-tab",
+    keywords:["sector heat map","heatmap tab","heat map tab"],
+    technical:"The **Sector Heat Map** cross-compares average score, average premium, claim frequency and claim severity across all eight sectors in one grid, so cross-sector patterns are visible at a glance rather than buried in the Portfolio Explorer's row-by-row view.",
+    simple:"The Sector Heat Map lines up all eight sectors side by side so you can quickly see which ones tend to have higher scores, higher premiums, or more frequent/severe claims.",
+  },
+  {
+    id:"threat-tab",
+    keywords:["threat exposure","threat tab","vulnerability tab","control gap"],
+    technical:"The **Threat Exposure** tab breaks down the control/vulnerability factors driving scores across the book — how many synthetic policies lack protection detail, a crisis-response retainer, HEAT training, or travel tracking — alongside frequency/severity statistics.",
+    simple:"The Threat Exposure tab shows which protective measures are most often missing across the book — like how many clients don't have security training or travel tracking — so you can see where the biggest gaps tend to sit.",
+  },
+  {
+    id:"geo-tab",
+    keywords:["geographic exposure","geo tab","world map tab","map tab"],
+    technical:"The **Geographic Exposure** tab is the full interactive world map: pulsing hotspot markers tied to the sectors above, hover detail per hotspot, and a rolling illustrative signal log. It's a visualisation layer over the same sector risk assumptions used elsewhere in the dashboard, not a live intelligence feed.",
+    simple:"The Geographic Exposure tab is the big interactive world map with glowing dots on regions the model treats as higher-risk for each sector. Hover a dot for detail. It's illustrative — built from this dashboard's own assumptions, not a live news feed.",
+  },
+  {
+    id:"proof-of-life",
+    keywords:["proof of life","poL protocol","verify hostage","negotiation protocol"],
+    technical:"Proof-of-life is a negotiation control, not a legal formality: before any payment moves, the response consultant insists on evidence the hostage is alive and matches a pre-agreed challenge (a fact only they'd know, a specific phrase, sometimes a physical marker). It exists because paying against a stale or fabricated claim is a real failure mode, particularly once multiple criminal actors realise a case is being negotiated and try to insert themselves into the process. Underwriting-wise, cover typically responds to costs incurred running these protocols, not just the ransom itself.",
+    simple:"Proof-of-life just means: before anyone pays anything, the negotiator makes sure the hostage is actually alive and it's really their captors talking, usually by asking a question only the hostage could answer correctly. It matters because sometimes more than one group tries to claim they're holding someone, or a fake claim gets made to extract a payment. The policy usually covers the cost of doing this properly, not just the ransom.",
+  },
+  {
+    id:"sanctions-ofac",
+    keywords:["sanctions","ofac","terrorist financing","paying a ransom to","illegal to pay ransom","designated group"],
+    technical:"This is one of the more underrated underwriting-relevant legal traps in the line: paying a ransom to a group that is a designated terrorist organisation or otherwise sanctioned (OFAC in the US, equivalent regimes elsewhere) can itself expose the payer — and potentially the insurer — to criminal or civil liability, regardless of the humanitarian motive. This is precisely why response consultants and specialist counsel screen a kidnap group's affiliation before any payment moves, and why some policies carve out or heavily condition cover where a credible designated-group nexus exists. In Sahel and Horn-of-Africa cases specifically, several kidnap groups operate as financing arms of designated jihadist organisations, which makes this a live, not theoretical, consideration.",
+    simple:"Here's a legal wrinkle a lot of people don't expect: in some cases it can actually be illegal to pay a ransom, if the kidnappers turn out to be linked to a designated terrorist group — sanctions law can apply even though the motive is just getting someone home safely. That's exactly why a proper response team checks who's really behind a kidnapping before any money moves, and why some policies get complicated or excluded if there's a real terrorist-financing link.",
+  },
+  {
+    id:"aggregation",
+    keywords:["aggregation","accumulation risk","group limit","corporate group exposure"],
+    technical:"Aggregation is a portfolio-level concern this Executive Dashboard doesn't fully capture on its own: a single corporate group's policy might cover many individuals across many countries, so a single mass-casualty event (a compound siege, a hijacked conference, a targeted attack on an office) can trigger multiple simultaneous claims against what looks like one policy limit. Underwriters typically manage this with per-person sub-limits, aggregate caps per occurrence, and geographic accumulation tracking across the wider book — not just the individual risk score this dashboard's Simulator produces.",
+    simple:"Aggregation risk means: what if one bad event doesn't just hit one person, but several people covered under the same policy at once — say an attack on an office with ten insured staff inside? That's why policies usually have per-person limits as well as an overall cap for any single event, and underwriters keep an eye on how much exposure is piling up in one place across the whole book, not just risk-by-risk.",
+  },
+  {
+    id:"exclusions",
+    keywords:["exclusion","named peril","war exclusion","carve out","what isn't covered"],
+    technical:"Typical K&R exclusions and conditioning include: prior knowledge of an existing threat not disclosed at inception, self-inflicted or staged incidents, cover for the ransom-in-transit peril often sitting in a separate sub-limit, and — importantly — an overlap zone with war/political-violence wordings. A vessel seizure by a state-linked or quasi-military actor (the Red Sea Houthi attacks being a live 2026 example) sits closer to a marine war-risk peril than classic criminal kidnap-for-ransom, and gets underwritten and priced very differently even though it can look similar from the outside. Getting the peril classification right at the wording stage avoids a coverage dispute later.",
+    simple:"Not everything that looks like a kidnapping is covered the same way. If someone knew about a specific threat and didn't tell the insurer before buying cover, that can be excluded. And there's a grey zone between 'criminal kidnap for ransom' and 'war risk' — for example, a ship being seized by a state-backed militant group in an active conflict (like the Red Sea attacks) is usually treated more like a war-risk claim than a classic K&R one, even though from the outside it can look similar.",
+  },
+  {
+    id:"response-consultants",
+    keywords:["response consultant","crisis response firm","negotiator role","who negotiates"],
+    technical:"The response consultant is the operational core of a live case: they run communications with the captors (never the family or the insurer directly, to avoid emotionally-driven missteps), advise on ransom strategy and staged counter-offers, coordinate with law enforcement where appropriate, and manage the family/employer relationship throughout. Insurers underwrite the retainer relationship as much as the risk itself — a client with no pre-agreed consultant is underwriting a materially worse severity profile, which is exactly why this dashboard's scoring engine weights the crisis-response toggle so heavily.",
+    simple:"The response consultant is the professional who actually talks to the kidnappers — never the family directly, since panic and emotion make for bad negotiating. They handle the back-and-forth, advise on what to offer and when, and support the family through what's usually a very long, stressful process. A client who doesn't already have one of these firms on retainer is a genuinely riskier client to insure, which is why that single factor carries real weight in this dashboard's scoring.",
+  },
+  {
+    id:"kr-market-2026",
+    keywords:["kr market","insurance market size","who are the big insurers","market growth","industry outlook"],
+    technical:"By most 2026 market estimates the global K&R line sits somewhere in the low-single-digit billions of dollars (figures vary by research house, roughly $2-2.6bn), growing at a mid-to-high single-digit CAGR, with North America the largest regional share. The market remains concentrated among a small number of carriers with real global reach — names that come up repeatedly include AIG, Chubb, Hiscox, Beazley, AXA XL, and Lloyd's syndicates — reflecting how much specialist intelligence and response-network access this line actually requires to underwrite well. Two growth drivers worth flagging: rising corporate duty-of-care obligations (courts and regulators increasingly expect employers to have done something about foreseeable travel risk), and the emergence of virtual/express-kidnap as a distinct sub-product rather than a footnote on a traditional K&R wording.",
+    simple:"This is a fairly small, specialist insurance market — a couple of billion dollars globally — dominated by a handful of big names like AIG, Chubb, Hiscox, Beazley, AXA XL, and Lloyd's syndicates, because it takes serious intelligence and response-network capability to do this well. It's growing steadily, partly because companies are under more legal and reputational pressure to actually protect staff who travel (\"duty of care\"), and partly because virtual/express kidnap scams have become common enough that insurers now sell it as its own distinct product.",
+  },
+  {
+    id:"world-events-2026",
+    keywords:["2026 events","world news 2026","recent events","what's happening in the world","what's happened in the world","happened in the world","current events","news this year","world events","what happened in 2026","matters for k&r","haiti","mexico","cartel","el mencho","sahel","mali","burkina faso","niger state","drc","congo","m23","red sea","houthi","gulf of guinea piracy news","ecuador"],
+    technical:"A fixed written snapshot (compiled from reporting up to early August 2026 — this does not update automatically, so check live sources for anything more recent): **Gulf of Guinea** — piracy incident counts have actually fallen sharply through 2026 (Nigeria's own waters reportedly piracy-free for several years running), but the security vacuum left behind is increasingly filled by proxy conflict and 'grey zone' activity linked to Sahel instability, and private armed escort vessels have become a routine, priced-in cost of transit. **Sahel** — JNIM and Islamic State Sahel Province continue fighting both governments and each other across Mali, Burkina Faso and Niger; kidnap-for-ransom volumes are down from their 2022-24 peak but remain a live insurgent financing tool, underlined by the November 2025 mass abduction of 303 students from a Niger State boarding school (all released by December). JNIM has also been pushing south toward Togo, Benin and northern Ghana. **Haiti** — gangs now control most of Port-au-Prince and have expanded into the Artibonite and Centre departments; 2026 has already seen thousands of deaths and well over a hundred kidnappings, including of journalists and a government security official's family; a UN-backed Gang Suppression Force stood up in 2025 is trying to respond. **Mexico/Latin America** — the February 2026 killing of CJNG leader 'El Mencho' triggered a wave of cartel retaliation and unrest; mid-2026 saw fresh US terrorist-organisation designations for several Mexican and Ecuadorian criminal groups, which raises real sanctions/compliance exposure for firms and insurers operating nearby, all against the backdrop of Mexico co-hosting the 2026 World Cup. **Eastern DRC** — a fragile Doha-mediated ceasefire framework between the government and Rwanda-backed M23 (building on a US-brokered Washington agreement) keeps being agreed and then violated; fighting has continued into North and South Kivu's mining areas through 2026. **Red Sea/Gulf of Aden** — Houthi attacks on shipping have swung on and off through 2026 in step with the wider Israel-Iran-US conflict cycle, with ceasefires repeatedly announced and then broken; this is really a war-risk-adjacent maritime peril rather than classic K&R, but it's highly relevant to any marine crew-exposure book.",
+    simple:"Here's a plain-English snapshot of major world events through mid-2026 that matter for this kind of risk — written as a fixed briefing, not a live feed, so it won't update on its own: **West Africa's coast** has actually seen less piracy this year, but the calm is a bit deceptive — instability from inland conflicts is spilling into the same waters, and shipping companies now routinely hire armed escorts. **The Sahel** (Mali, Burkina Faso, Niger) is still gripped by an insurgency that uses kidnapping to raise money — a huge school kidnapping of over 300 children in Nigeria late last year (they were all eventually released) was a stark reminder of that. **Haiti** is in a severe gang-control crisis — most of the capital is run by armed gangs, kidnappings are common, and international efforts to help are still ramping up. **Mexico** saw a major cartel boss killed in February, which set off a wave of violent retaliation, and several criminal groups there and in Ecuador were added to official terrorist watchlists mid-year — that matters because it can be illegal to interact with those groups even to pay a ransom. **Eastern Congo** has an on-again, off-again ceasefire between the government and a rebel group that keeps getting broken. And **the Red Sea** has seen ships attacked on and off all year as part of the wider Middle East conflict — that's more of a war-risk issue than classic kidnap risk, but still very relevant if you're covering ship crews.",
+  },
+];
+
+const GREETING_RE = /^(hi|hello|hey|morning|afternoon|evening|yo|hiya)\b/;
+const THANKS_RE = /\b(thanks|thank you|cheers|appreciate)\b/;
+const JOKE_RE = /\b(joke|funny|laugh|humour|humor)\b/;
+const SCENARIO_RE = /\b(premium|quote|price|cost|how much|estimate|score this|rate this|underwrite|calculate)\b/;
+
+const HUMOUR_LINES = [
+  "(Filed under: things I have unreasonably strong opinions about.)",
+  "That one's on the house — no retainer required.",
+  "I'd put that in writing, but nobody reads the footnotes anyway.",
+  "Say that in the wording meeting and watch the room go quiet.",
+  "Don't quote me on that. Actually — go ahead, I stand by it.",
+  "I'd stake my (entirely hypothetical) pension on that one.",
+  "That's the kind of line that gets you invited to fewer renewal meetings.",
+  "Feel free to steal that for your next training deck.",
+];
+
+const JOKES = [
+  "An underwriter, a negotiator and a claims adjuster walk into a bar. The bartender says \"is this a K&R claim?\" and all three reply \"it depends on the captivity duration.\"",
+  "Why did the underwriter bring a torch to the renewal meeting? Because the client's risk profile had a lot of grey areas.",
+  "What do you call a kidnapping case that resolves in under an hour? Suspiciously efficient, and also possibly a training exercise.",
+  "I once heard a broker describe a 'low-risk' client as someone who'd never left their own postcode. That's not underwriting, that's just agoraphobia with paperwork.",
+  "Why don't K&R underwriters play poker? Too much practice pricing bluffs.",
+];
+
+const HOW_ARE_YOU_RE = /\b(how are you|how's it going|how are things|you good|you alright)\b/;
+const ARE_YOU_REAL_RE = /\b(are you (a )?(real )?(ai|human|bot|robot)|are you claude|are you sentient|do you have feelings)\b/;
+const SMALL_TALK_LINES = [
+  "Can't complain — the coffee's terrible but the risk data's decent, which is roughly the right way round for this job.",
+  "Steady as ever. Nothing on my desk today that a good proof-of-life protocol couldn't fix.",
+  "Doing well, thanks for asking — genuinely not something I get asked often around here.",
+];
+
+function runScenarioCalculator(q){
+  const sector = findSectorInText(q) || SECTORS[0].name;
+  const s = SECTORS.find(x=>x.name===sector);
+
+  const protectionDetail = /protection detail|close protection|bodyguard|cp team/.test(q) && !/no protection|without protection/.test(q);
+  const crisisResponse = /(crisis response|retainer|response consultant|response firm)/.test(q) && !/no crisis|without.*retainer/.test(q);
+  let heat = "No";
+  if(/heat train|hostile environment/.test(q) && !/no heat|untrained|without.*train/.test(q)) heat = "Yes";
+  else if(/partial.*train|some training/.test(q)) heat = "Partial";
+  const travelTracking = /(travel track|gps monitor|tracked)/.test(q) && !/no track|untracked/.test(q);
+  let priorIncidents = 0;
+  if(/multiple incidents|repeat incident|two incidents|several incidents/.test(q)) priorIncidents = 2;
+  else if(/prior incident|one incident|previous incident|past incident/.test(q)) priorIncidents = 1;
+  let travelFrequency = 5;
+  if(/frequent travel|constant travel|travels? (a lot|often|weekly)/.test(q)) travelFrequency = 8;
+  else if(/occasional travel|rarely travels?|infrequent travel/.test(q)) travelFrequency = 3;
+  let regionInstability = 5;
+  if(/conflict zone|unstable|warzone|war zone|high instability/.test(q)) regionInstability = 9;
+  else if(/stable region|low instability|safe region/.test(q)) regionInstability = 2;
+
+  let bandIdx = 1;
+  if(/15m\+|over 15m|above 15/.test(q)) bandIdx = 3;
+  else if(/5m|5-15|five to fifteen/.test(q)) bandIdx = 2;
+  else if(/up to 1m|under 1m|below 1m/.test(q)) bandIdx = 0;
+  const band = LIMIT_BANDS[bandIdx];
+
+  const score = computeScore({ protectionDetail, crisisResponse, heat, travelTracking, priorIncidents, sectorRisk:s.sectorRisk, travelFrequency, regionInstability });
+  const scoreBand = bandForScore(score);
+  const premium = computePremium(score, band.mult);
+  const retention = computeRetention(score, band.label);
+
+  const assumptions = [
+    `sector: **${sector}**`,
+    `limit band: **${band.label}**`,
+    `protection detail: ${protectionDetail ? "in place" : "assumed absent"}`,
+    `crisis-response retainer: ${crisisResponse ? "in place" : "assumed absent"}`,
+    `HEAT training: ${heat}`,
+    `travel tracking: ${travelTracking ? "in place" : "assumed absent"}`,
+    `prior incidents: ${priorIncidents}`,
+    `travel frequency: ${travelFrequency}/10, regional instability: ${regionInstability}/10`,
+  ];
+
+  return { sector, score, scoreBand, premium, retention, band, assumptions };
+}
+
+function buildScenarioReply(q, mode){
+  const r = runScenarioCalculator(q);
+  const heading = mode==="simple"
+    ? `Here's a rough estimate, based on what you told me and a few sensible assumptions where you didn't:`
+    : `Running that through the same engine the Simulator uses:`;
+  const numbers = mode==="simple"
+    ? `- Risk score: **${r.score}/100** (${r.scoreBand.label} band)\n- Estimated premium: **${fmtGBP(r.premium)}**\n- Suggested retention: **${fmtGBP(r.retention)}**`
+    : `- Score: **${r.score}/100**, band **${r.scoreBand.label}**\n- Indicative premium: **${fmtGBP(r.premium)}** (limit band ${r.band.label}, multiplier x${r.band.mult})\n- Suggested retention: **${fmtGBP(r.retention)}**`;
+  return `${heading}\n\n${numbers}\n\nAssumptions I used:\n${r.assumptions.map(a=>`- ${a}`).join("\n")}\n\nThis is a rough read, not a quote — open the **Underwriting Simulator** tab to dial in every input precisely and see the full breakdown, benchmark and recommendations.`;
+}
+
+// A keyword "hits" a query either as an exact substring (strong signal) or,
+// failing that, if every one of its significant (>2-letter) words shows up
+// somewhere in the query regardless of order/phrasing — this is what catches
+// paraphrases of the suggestion chips (e.g. "scores a risk" vs "score calculated").
+function keywordHits(keyword, q, qWords){
+  if(q.includes(keyword)) return 1;
+  const kWords = keyword.split(/\s+/).filter(w=>w.length>2);
+  if(kWords.length>=2 && kWords.every(w=>qWords.has(w))) return 0.75;
+  return 0;
+}
+function findBestTopic(q){
+  const qWords = new Set(q.split(/[^a-z0-9&]+/i).filter(Boolean));
+  let best = null, bestScore = 0;
+  for(const topic of KB_TOPICS){
+    const score = topic.keywords.reduce((sum,k)=>sum+keywordHits(k,q,qWords), 0);
+    if(score>bestScore){ bestScore = score; best = topic; }
+  }
+  return bestScore>0 ? best : null;
+}
+
+function generateAdvisorReply(rawText){
+  const q = rawText.toLowerCase().trim();
+  const mode = state.chat.mode;
+  const maybeHumour = Math.random()<0.35 ? `\n\n${HUMOUR_LINES[Math.floor(Math.random()*HUMOUR_LINES.length)]}` : "";
+  let newsQuery = null;
+
+  if(GREETING_RE.test(q) && q.length<25){
+    return { content:"Hello. What can I help you get your head around today — a tab, a sector, a region, or just the shape of this whole market?", newsQuery };
+  }
+  if(THANKS_RE.test(q)){
+    return { content:"Any time. That's what I'm here for.", newsQuery };
+  }
+  if(HOW_ARE_YOU_RE.test(q)){
+    return { content: SMALL_TALK_LINES[Math.floor(Math.random()*SMALL_TALK_LINES.length)] + " Anyway — what's on your desk?", newsQuery };
+  }
+  if(ARE_YOU_REAL_RE.test(q)){
+    return { content:"Honest answer, since you asked directly: I'm not a live AI model — no external service, no internet connection. I'm a rule-based assistant built into this dashboard, matching what you ask against knowledge written into the page and this dashboard's own real scoring engine for numbers. The personality's genuine effort, but I won't pretend to be something I'm not.", newsQuery };
+  }
+  if(JOKE_RE.test(q)){
+    return { content: JOKES[Math.floor(Math.random()*JOKES.length)] + maybeHumour, newsQuery };
+  }
+
+  const hotspot = findHotspotInText(q);
+  if(hotspot){
+    const key = Object.keys(HOTSPOT_DRIVER).find(k=>hotspot.name.toLowerCase().includes(k.toLowerCase()));
+    const driver = key ? HOTSPOT_DRIVER[key] : "a combination of weak local security capacity and criminal or armed-group activity";
+    newsQuery = `${hotspot.name.split(",")[0]} security situation`;
+    const content = mode==="simple"
+      ? `${hotspot.name} shows up on the Geo tab tied to the ${hotspot.sector} sector. In short: ${hotspot.note} My take on the underlying "why" — it comes down to ${driver}.`
+      : `${hotspot.name} is modelled here against the **${hotspot.sector}** sector. Dashboard note: ${hotspot.note} My analytical read on the driver: this pattern is consistent with ${driver}. Treat this as pattern-level reasoning, not a claim about any specific current incident.`;
+    return { content, newsQuery };
+  }
+
+  if(SCENARIO_RE.test(q) && (findSectorInText(q) || /sector|client|risk/.test(q))){
+    return { content: buildScenarioReply(q, mode) + maybeHumour, newsQuery };
+  }
+
+  const topic = findBestTopic(q);
+  if(topic){
+    const content = (mode==="simple" ? topic.simple : topic.technical) + maybeHumour;
+    if(topic.id==="emerging-risk") newsQuery = "kidnap ransom risk news";
+    if(topic.id==="world-events-2026") newsQuery = "kidnap ransom security risk news 2026";
+    if(topic.id==="kr-market-2026") newsQuery = "kidnap ransom insurance market news";
+    return { content, newsQuery };
+  }
+
+  return {
+    content:"I didn't quite catch a clear topic in that one — I'm a rule-based advisor, not a free-ranging model, so I work best with a fairly direct question. Try one of the suggestions below, ask about a specific tab or sector, or describe a scenario (e.g. \"premium for a mining client with no HEAT training\") and I'll run it through the calculator.",
+    newsQuery,
+  };
+}
+
+const ADVISOR_CHIPS = [
+  "What's happened in the world in 2026 that matters for K&R?",
+  "Explain the Executive Dashboard tab",
+  "Walk me through how the Simulator scores a risk",
+  "Premium estimate for an oil and gas client with no HEAT training",
+  "Tell me about aggregation risk",
+  "Tell me a joke",
+];
+
+function renderAdvisor(){
+  content.innerHTML = `
+    <div class="card">
+      <div class="advisor-header">
+        <div class="advisor-avatar">${icon("shield-check", 22, "#20160A")}</div>
+        <div>
+          <div class="advisor-name">Marlowe — AI K&amp;R Risk Advisor</div>
+          <div class="advisor-tagline">Underwriting support agent · runs fully offline · built-in 2026 world briefing · not a substitute for underwriting authority</div>
+        </div>
+        <div class="advisor-status"><span class="dot"></span>Online</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px;">
+        <div class="chip-row" id="advisor-chips"></div>
+        <div class="mode-switch" id="advisor-mode-switch">
+          <button data-mode="simple">Simple</button>
+          <button data-mode="technical">Technical</button>
+        </div>
+      </div>
+      <div class="chat-window" id="chat-window"></div>
+      <div class="chat-input-row">
+        <textarea id="chat-input" placeholder="Ask Marlowe about K&amp;R risk, this dashboard, a sector, a region, a scenario..." rows="1"></textarea>
+        <button class="chat-send-btn" id="chat-send-btn" aria-label="Send">${icon("chevron-right", 18, "#1a1206")}</button>
+      </div>
+      <div class="chat-disclaimer">Marlowe assists underwriting judgement; it does not bind cover or replace sign-off. Runs entirely in your browser from written knowledge (including a fixed world-events briefing compiled to early August 2026 — it will not update itself) and this dashboard's own maths. No external API, no live feed, no cost. Conversation memory lives in this browser tab only.</div>
+    </div>
+  `;
+
+  document.getElementById("advisor-chips").innerHTML = ADVISOR_CHIPS
+    .map(c=>`<button class="chip" data-chip="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("");
+  document.getElementById("advisor-chips").addEventListener("click", (e)=>{
+    const btn = e.target.closest(".chip");
+    if(!btn) return;
+    sendAdvisorMessage(btn.dataset.chip);
+  });
+
+  const modeSwitch = document.getElementById("advisor-mode-switch");
+  [...modeSwitch.children].forEach(b=>b.classList.toggle("on", b.dataset.mode===state.chat.mode));
+  modeSwitch.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn) return;
+    state.chat.mode = btn.dataset.mode;
+    [...modeSwitch.children].forEach(b=>b.classList.toggle("on", b.dataset.mode===state.chat.mode));
+  });
+
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("chat-send-btn");
+  input.addEventListener("input", ()=>{ input.style.height = "auto"; input.style.height = Math.min(120, input.scrollHeight) + "px"; });
+  input.addEventListener("keydown", (e)=>{
+    if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); trySend(); }
+  });
+  sendBtn.addEventListener("click", trySend);
+  function trySend(){
+    const text = input.value.trim();
+    if(!text || state.chat.loading) return;
+    input.value = ""; input.style.height = "auto";
+    sendAdvisorMessage(text);
+  }
+
+  renderChatMessages();
+  if(state.chat.messages.length===0){
+    state.chat.messages.push({ role:"assistant", content:"Evening — or morning, wherever you're logging in from. I'm Marlowe: think of me as the colleague who's read every K&R file that's ever crossed this desk, has opinions about most of them, and still tells the odd joke over coffee.\n\nA quick note on how I work: I run entirely offline, right here in your browser — no external AI service, no live feed, nothing to configure. My knowledge is written into this page, including a fixed world-events briefing covering the big K&R-relevant stories through early August 2026 (Sahel, Haiti, Gulf of Guinea, the DRC, cartel violence, the lot) — it won't update itself, so treat it as a solid starting point, not the morning news. My numbers come from the same scoring engine as the Simulator tab, so ask for a premium estimate and I'll actually calculate it.\n\nAsk me anything — a tab, a sector, a region, a scenario, or just what's been going on this year. Tap **Simple** for plain English instead of insurance-speak. And yes, I do jokes." });
+    renderChatMessages();
+  }
+}
+
+function renderChatMessages(){
+  const win = document.getElementById("chat-window");
+  if(!win) return;
+  const rows = state.chat.messages.map(m=>{
+    const isUser = m.role==="user";
+    const newsLine = (!isUser && m.newsQuery)
+      ? `<a class="src-line" href="${newsSearchLink(m.newsQuery)}" target="_blank" rel="noopener">Check recent coverage on Google News ↗ (opens a new tab)</a>`
+      : "";
+    return `<div class="chat-row ${isUser?"user":"assistant"}">
+      <div class="chat-avatar ${isUser?"user":"assistant"}">${isUser?"You":"M"}</div>
+      <div class="chat-bubble">${mdLite(m.content)}${newsLine}</div>
+    </div>`;
+  }).join("");
+  const typing = state.chat.loading
+    ? `<div class="chat-row assistant"><div class="chat-avatar assistant">M</div><div class="chat-bubble"><span class="typing-dots"><span></span><span></span><span></span></span></div></div>`
+    : "";
+  win.innerHTML = rows + typing;
+  win.scrollTop = win.scrollHeight;
+}
+
+function sendAdvisorMessage(text){
+  state.chat.messages.push({ role:"user", content:text });
+  state.chat.loading = true;
+  renderChatMessages();
+
+  // Small simulated "thinking" delay for a natural chat feel — everything
+  // below runs locally, synchronously, with no network call of any kind.
+  setTimeout(()=>{
+    const { content, newsQuery } = generateAdvisorReply(text);
+    state.chat.messages.push({ role:"assistant", content, newsQuery });
+    state.chat.loading = false;
+    renderChatMessages();
+  }, 450 + Math.random()*500);
+}
+
+/* ======================================================================
+   INITIAL RENDER
+====================================================================== */
+renderContent();
+renderPresenterBar();
+
+/* ======================================================================
+   INTERACTIVE ANIMATED BACKGROUND
+   A drifting intelligence-network of nodes and connecting lines that
+   brightens and reorients near the cursor — a quiet nod to signal
+   tracking / surveillance-network themes of the dashboard.
+
+   Perf notes:
+   - The animation loop is paused entirely when the tab/document is not
+     visible (document.hidden), so it costs zero CPU/battery while the
+     user is on another tab or the window is minimized.
+   - Pairwise connection checks use a coarse spatial grid keyed to
+     LINK_DIST, so each node only tests distance against neighbours in
+     its own and adjacent cells instead of every other node on the
+     canvas (avoids the O(n^2) full-pair scan every frame).
+====================================================================== */
+(function backgroundNetwork(){
+  const canvas = document.getElementById("bg-canvas");
+  const ctx = canvas.getContext("2d");
+  let w, h, dpr;
+  let nodes = [];
+  let pulses = [];
+  const mouse = { x:-9999, y:-9999, active:false };
+  let t = 0;
+  let rafId = null;
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    canvas.width = w*dpr; canvas.height = h*dpr;
+    canvas.style.width = w+"px"; canvas.style.height = h+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const count = Math.max(32, Math.min(80, Math.round((w*h)/22000)));
+    nodes = Array.from({length:count}, ()=>({
+      x: Math.random()*w, y: Math.random()*h,
+      vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3,
+      r: 1 + Math.random()*1.6,
+      phase: Math.random()*Math.PI*2,
+      wspeed: 0.0004 + Math.random()*0.0006,
+      pulsePhase: Math.random()*Math.PI*2,
+    }));
+    pulses = [];
+  }
+  window.addEventListener("resize", resize);
+  window.addEventListener("mousemove", (e)=>{ mouse.x=e.clientX; mouse.y=e.clientY; mouse.active=true; });
+  window.addEventListener("mouseleave", ()=>{ mouse.active=false; });
+  window.addEventListener("touchmove", (e)=>{ if(e.touches[0]){ mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; mouse.active=true; } }, {passive:true});
+  window.addEventListener("touchend", ()=>{ mouse.active=false; });
+
+  const LINK_DIST = 155;
+  const MOUSE_DIST = 220;
+
+  // Spatial grid: bucket nodes into cells of size LINK_DIST so the
+  // connection pass only compares each node against nodes in its own
+  // and the 8 surrounding cells, instead of every node in the scene.
+  function buildGrid(){
+    const cell = LINK_DIST;
+    const grid = new Map();
+    const key = (cx,cy)=>cx+","+cy;
+    for(const n of nodes){
+      const cx = Math.floor(n.x/cell), cy = Math.floor(n.y/cell);
+      const k = key(cx,cy);
+      if(!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(n);
+    }
+    return { grid, cell, key };
+  }
+
+  function step(){
+    t += 1;
+
+    for(const n of nodes){
+      // perpetual organic wander — a slowly-rotating force that never
+      // fully decays, so the field is always drifting even at rest
+      n.phase += n.wspeed;
+      n.vx += Math.cos(n.phase) * 0.006;
+      n.vy += Math.sin(n.phase*1.3) * 0.006;
+
+      if(mouse.active){
+        const dx = n.x - mouse.x, dy = n.y - mouse.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist < MOUSE_DIST && dist > 0.01){
+          const strength = 1 - dist/MOUSE_DIST;
+          // gentle pull inward
+          const pull = strength * 0.05;
+          n.vx -= (dx/dist)*pull;
+          n.vy -= (dy/dist)*pull;
+          // tangential swirl around the cursor for a lively orbit feel
+          const swirl = strength * 0.09;
+          n.vx += (-dy/dist)*swirl;
+          n.vy += (dx/dist)*swirl;
+        }
+      }
+
+      // soft damping keeps speed bounded without ever fully stopping
+      n.vx *= 0.978; n.vy *= 0.978;
+      const speed = Math.sqrt(n.vx*n.vx+n.vy*n.vy);
+      const maxSpeed = 0.9;
+      if(speed > maxSpeed){ n.vx = (n.vx/speed)*maxSpeed; n.vy = (n.vy/speed)*maxSpeed; }
+
+      n.x += n.vx; n.y += n.vy;
+      if(n.x < -20) n.x = w+20; if(n.x > w+20) n.x = -20;
+      if(n.y < -20) n.y = h+20; if(n.y > h+20) n.y = -20;
+    }
+
+    // occasionally launch a signal pulse along a currently-live connection
+    if(Math.random() < 0.045 && nodes.length > 1){
+      const a = nodes[Math.floor(Math.random()*nodes.length)];
+      let best = null, bestDist = LINK_DIST;
+      for(const b of nodes){
+        if(b===a) continue;
+        const d = Math.hypot(a.x-b.x, a.y-b.y);
+        if(d < bestDist){ bestDist = d; best = b; }
+      }
+      if(best) pulses.push({ a, b:best, u:0, speed: 0.012 + Math.random()*0.012 });
+    }
+    pulses.forEach(p=>p.u += p.speed);
+    pulses = pulses.filter(p=>p.u < 1);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+
+    // ambient slow-orbiting scan glow — keeps the field alive even
+    // when the cursor is idle or off-screen
+    const orbitR = Math.min(w,h) * 0.32;
+    const ox = w/2 + Math.cos(t*0.0016) * orbitR;
+    const oy = h/2 + Math.sin(t*0.0021) * orbitR * 0.7;
+    const ambient = ctx.createRadialGradient(ox, oy, 0, ox, oy, 320);
+    ambient.addColorStop(0, "rgba(201,162,75,0.055)");
+    ambient.addColorStop(1, "rgba(201,162,75,0)");
+    ctx.fillStyle = ambient;
+    ctx.fillRect(0,0,w,h);
+
+    // cursor glow
+    if(mouse.active){
+      const grad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 260);
+      grad.addColorStop(0, "rgba(201,162,75,0.12)");
+      grad.addColorStop(1, "rgba(201,162,75,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,w,h);
+    }
+
+    // connections — grid-accelerated so we only test nearby pairs
+    const { grid, cell, key } = buildGrid();
+    const seen = new Set(); // avoid drawing the same pair twice
+    for(const n of nodes){
+      const cx = Math.floor(n.x/cell), cy = Math.floor(n.y/cell);
+      for(let ox=-1; ox<=1; ox++){
+        for(let oy=-1; oy<=1; oy++){
+          const bucket = grid.get(key(cx+ox, cy+oy));
+          if(!bucket) continue;
+          for(const other of bucket){
+            if(other===n) continue;
+            const dx = n.x-other.x, dy = n.y-other.y;
+            const dist = Math.sqrt(dx*dx+dy*dy);
+            if(dist >= LINK_DIST) continue;
+            const idKey = n===other ? null : (nodes.indexOf(n) < nodes.indexOf(other)
+              ? nodes.indexOf(n)+"_"+nodes.indexOf(other)
+              : nodes.indexOf(other)+"_"+nodes.indexOf(n));
+            if(idKey===null || seen.has(idKey)) continue;
+            seen.add(idKey);
+
+            const a = n, b = other;
+            const nearMouseA = mouse.active ? Math.max(0, 1 - Math.hypot(a.x-mouse.x, a.y-mouse.y)/260) : 0;
+            const nearMouseB = mouse.active ? Math.max(0, 1 - Math.hypot(b.x-mouse.x, b.y-mouse.y)/260) : 0;
+            const glow = Math.max(nearMouseA, nearMouseB);
+            const shimmer = 0.85 + 0.15*Math.sin(t*0.03 + nodes.indexOf(a)*0.7 + nodes.indexOf(b)*0.3);
+            const baseAlpha = (1 - dist/LINK_DIST) * 0.17 * shimmer;
+            const alpha = baseAlpha + glow*0.30;
+            ctx.strokeStyle = glow > 0.05
+              ? `rgba(232,200,119,${Math.min(0.5, alpha)})`
+              : `rgba(143,162,189,${Math.min(0.35, alpha)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // traveling signal pulses along live connections
+    for(const p of pulses){
+      const x = p.a.x + (p.b.x-p.a.x)*p.u;
+      const y = p.a.y + (p.b.y-p.a.y)*p.u;
+      const fade = Math.sin(Math.PI * p.u); // fades in and out along the path
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(232,200,119,${0.7*fade})`;
+      ctx.fill();
+    }
+
+    // nodes — gentle breathing pulse so they never look frozen
+    for(const n of nodes){
+      const nearMouse = mouse.active ? Math.max(0, 1 - Math.hypot(n.x-mouse.x, n.y-mouse.y)/260) : 0;
+      const breathe = 1 + 0.25*Math.sin(t*0.045 + n.pulsePhase);
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, (n.r*breathe) + nearMouse*1.5, 0, Math.PI*2);
+      ctx.fillStyle = nearMouse > 0.05 ? `rgba(232,200,119,${0.5+nearMouse*0.5})` : "rgba(143,162,189,0.5)";
+      ctx.fill();
+    }
+  }
+
+  function loop(){
+    step(); draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  // Pause the whole animation loop when the tab isn't visible — no
+  // point burning CPU/battery animating a canvas nobody can see.
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden){
+      if(rafId){ cancelAnimationFrame(rafId); rafId = null; }
+    } else if(!rafId){
+      rafId = requestAnimationFrame(loop);
+    }
+  });
+
+  resize();
+  if(!document.hidden){ rafId = requestAnimationFrame(loop); }
+})();
+</script>
+</body>
+</html>
